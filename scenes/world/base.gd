@@ -72,7 +72,7 @@ func _layout_apron() -> void:
 		return
 	var x := data.apron_from_m
 	var slot := 0
-	while x < data.apron_to_m:
+	while x < data.apron_to_m and (data.parked_max <= 0 or slot < data.parked_max):
 		var blocked := false
 		for bx in data.squadron_board_x_m:
 			if absf(x - bx) < 20.0:

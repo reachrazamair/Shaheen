@@ -38,13 +38,15 @@ extends Resource
 @export var apron_from_m := 400.0
 @export var apron_to_m := 700.0
 @export var parked_spacing_m := 13.0
+## Most aircraft parked on the apron (owner: around 10-15). 0 = no limit.
+@export var parked_max := 12
 ## 0 = no shelters.
 @export var shelter_every := 3
 ## Squadron boards on the apron: text (two lines split by "|") and position.
 @export var squadron_boards := PackedStringArray()
 @export var squadron_board_x_m := PackedFloat32Array()
 ## Big welcome board (lines), placed welcome_sign_x_m from the runway start
-## (negative = before the threshold, seen on final approach). Empty = none.
+## (negative = before the threshold; past runway_length_m = beyond the far end). Empty = none.
 @export var welcome_sign := PackedStringArray()
 @export var welcome_sign_x_m := -160.0
 

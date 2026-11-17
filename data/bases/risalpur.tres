@@ -24,4 +24,5 @@ parked_aircraft = Array[Texture2D]([ExtResource("2_k8")])
 apron_from_m = 415.0
 apron_to_m = 640.0
 parked_spacing_m = 13.0
+parked_max = 12
 shelter_every = 4
