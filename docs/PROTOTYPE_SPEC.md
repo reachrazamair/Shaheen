@@ -15,7 +15,7 @@ Everything else (career, money, menus beyond the basics, many bases, weather, we
   - Runway (length, position), a hangar, a control tower, a windsock. Placeholder art is fine.
   - Different background tint or colour so you can tell them apart.
 - One flat-ish ground line between them with parallax background layers (sky, far mountains, near trees).
-- A very simple start screen: pick an aircraft → Fly.
+- A very simple start screen: enter your name (shown in game as "AVN CDT <NAME>", Aviation Cadet), pick an aircraft → Fly.
 - HUD and a landing result screen.
 - Web export that runs in a browser.
 
@@ -63,7 +63,7 @@ Use a `CharacterBody2D` (or `Node2D` with manual movement) updated in `_physics_
 
 ## World layout
 
-- **Risalpur is the starting point** (PAF Academy Asghar Khan), Peshawar the destination; `route_distance_m` = 9,000 m on the flight scene.
+- **Risalpur is the starting point** (PAF Academy Asghar Khan), Peshawar the destination; `route_distance_m` = 5,000 m on the flight scene (owner shortened it from 9 km).
 - Departure runway on the left, destination runway several km to the right (compressed so a flight takes ~2–3 minutes in the trainer). Distance comes from data.
 - Ground: flat line at y = 0 with slight cosmetic undulation between bases (no collision complexity yet). Flying into the ground away from a runway = crash.
 - Ceiling: soft limit (e.g. thin air reduces thrust above X) so the player can't fly to infinity.

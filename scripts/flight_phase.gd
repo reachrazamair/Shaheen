@@ -9,17 +9,20 @@ const CRUISE := "CRUISE"
 const DESCENT := "DESCENT"
 const APPROACH := "APPROACH"
 const LANDED := "LANDED"
+const CRASHED := "CRASHED"
 
 ## Still "TAKE OFF" until this height after lift-off.
 const TAKEOFF_HEIGHT_FT := 300.0
 ## Vertical speed beyond which we call it a climb or descent.
 const CLIMB_FPM := 300.0
 ## Within this distance of the destination runway (and not climbing) = approach.
-const APPROACH_DISTANCE_M := 4000.0
+const APPROACH_DISTANCE_M := 2500.0
 
 
 ## distance_to_destination_m: INF until destinations exist (chunk 1.6).
 static func compute(a: Aircraft, has_flown: bool, distance_to_destination_m := INF) -> String:
+	if a.crashed:
+		return CRASHED
 	if a.on_ground:
 		return LANDED if has_flown else TAKE_OFF
 	var vs := a.vertical_speed_fpm

@@ -91,6 +91,19 @@ extends Resource
 ## Wheel-brake deceleration in g (0.9 = 0.9 g), scaled by weight on the wheels.
 @export var brake_strength := 0.9
 
+@export_group("Landing grading")
+## Touchdown sink rate limits (ft/min). Up to perfect = PERFECT, then GOOD,
+## FIRM, HARD; beyond hard_touchdown_fpm the gear collapses = CRASH.
+@export var perfect_touchdown_fpm := 150.0
+@export var good_touchdown_fpm := 300.0
+@export var firm_touchdown_fpm := 500.0
+@export var hard_touchdown_fpm := 800.0
+## Touching down with the nose more than this far below the horizon = crash.
+@export var max_nose_down_touchdown_deg := 2.0
+## Running off the end of a runway (or off it onto grass) faster than this = crash;
+## slower = overrun penalty.
+@export var overrun_crash_speed_kt := 15.0
+
 @export_group("Limits and gauges")
 ## Airspeed gauge top end (later: overspeed warning). Yellow arc from 85%.
 @export var max_speed_kt := 160.0

@@ -4,7 +4,7 @@ This is the full long-term vision. Most of it is **not** built in the prototype.
 
 ## 1. Core idea
 
-You are a PAF pilot. Each mission: you're on the runway at one PAF base, you start up, take off, fly to another named PAF base, and land. Landing well (gentle touchdown, gear down, on the runway, not wasting fuel) earns pay and reputation. Pay unlocks better aircraft. You progress from basic trainers to front-line fighters.
+You are a PAF pilot, starting as an Aviation Cadet: the player enters their name and is addressed as "Avn Cdt <name>" (rank could rise with the career later). Each mission: you're on the runway at one PAF base, you start up, take off, fly to another named PAF base, and land. Landing well (gentle touchdown, gear down, on the runway, not wasting fuel) earns pay and reputation. Pay unlocks better aircraft. You progress from basic trainers to front-line fighters.
 
 The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
 - **Better controls**: responsive, readable, with clear instrument feedback. No fighting the interface.

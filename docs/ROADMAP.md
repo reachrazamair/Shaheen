@@ -12,7 +12,9 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.6 Two bases and parallax scenery
   - Route: **Risalpur (start, PAF Academy Asghar Khan) → Peshawar**, 9 km between thresholds (compressed). Buildings, windsock, name boards, approach lights, parallax mountains/hills/trees/clouds, scenery blending from Risalpur's green plains to Peshawar's big mountains, distance bar, APPROACH phase and landing calls.
   - Also done alongside 1.6 at the owner's request: pixel-art Super Mushshak sprite (sharper, ~2x true scale), animated retractable gear on the Mushshak, instructor redrawn in helmet + green flight suit (talks and blinks), camera keeps the ground in view when low.
-- [ ] 1.7 Landing detection, grading, result screen
+- [x] 1.7 Landing detection, grading, result screen
+  - Grades PERFECT/GOOD/FIRM/HARD from touchdown sink rate (limits in AircraftData), CRASH for: off-runway touchdown, gear up, nose-first, too hard, running off a runway end; WRONG BASE for landing back at Risalpur; overrun at low speed = one grade lower. Crash effect (fireball, debris, smoke). Result screen with Retry / Menu.
+  - Also: route shortened to **5 km** (owner: 9 km felt too long); start screen with **name entry**, shown as **"AVN CDT <NAME>"** (Aviation Cadet) bottom-left in flight, on the result screen and in the instructor's calls.
 - [ ] 1.8 Second aircraft (F-16) and aircraft-select screen
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
 

@@ -9,6 +9,7 @@ extends CanvasLayer
 @onready var messages: Control = $MessageBox
 @onready var debug_label: Label = $DebugLabel
 @onready var route_bar: Control = $RouteBar
+@onready var cadet_tag: Label = $CadetTag
 
 ## Seconds between repeated STALL callouts.
 @export var stall_callout_cooldown_s := 4.0
@@ -18,6 +19,8 @@ var departure: BaseData
 var destination: BaseData
 var route_distance_m := 1.0
 var has_flown := false
+## Set by the flight when it ends (landed/crashed): tutorial prompts stop.
+var flight_over := false
 var _said := {}
 var _stall_cooldown := 0.0
 var _last_touchdown_fpm := 0.0
@@ -30,11 +33,13 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	route_distance_m = distance_m
 	route_bar.to_name = to_base.short_name
 	route_bar.total_m = distance_m
+	cadet_tag.text = GameState.cadet_title()
 	panel.aircraft = a
 	phase_box.aircraft = a
 	a.lifted_off.connect(_on_lifted_off)
 	a.touched_down.connect(_on_touched_down)
-	messages.say("Welcome to %s, cadet. Today: fly to %s. Press E to start the engine." % [from_base.short_name.capitalize(), to_base.short_name.capitalize()])
+	messages.say("Welcome to %s, %s. Today: fly to %s. Press E to start the engine." % [
+			from_base.short_name.capitalize(), GameState.cadet_call(), to_base.short_name.capitalize()])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -73,6 +78,8 @@ func _once(key: String, text: String, urgent := false) -> void:
 
 func _instructor(delta: float) -> void:
 	var a := aircraft
+	if flight_over:
+		return
 	_stall_cooldown = maxf(0.0, _stall_cooldown - delta)
 	if a.stalled and _stall_cooldown <= 0.0:
 		_stall_cooldown = stall_callout_cooldown_s
@@ -96,17 +103,15 @@ func _instructor(delta: float) -> void:
 					destination.short_name.capitalize(), distance_to_destination() / 1000.0, roundi(a.data.stall_speed_kt)])
 		var dist := distance_to_destination()
 		var dest := destination.short_name.capitalize()
-		if dist < 5000.0 and dist > 0.0:
+		if dist < 2500.0 and dist > 0.0:
 			_once("descend", "%s ahead. Start your descent and slow down." % dest)
-		if dist < 3000.0 and dist > 0.0:
+		if dist < 1600.0 and dist > 0.0:
 			var gear := "gear down (G), " if a.data.retractable_gear and not a.gear_down else ""
 			_once("configure", "Set up to land: %sflaps LDG (F), about %d kt." % [gear, approach_speed_kt()])
-		if dist < 1200.0 and a.altitude_ft < 800.0:
+		if dist < 900.0 and a.altitude_ft < 600.0:
 			_once("cleared", "%s tower: cleared to land. Touch down gently." % dest)
 		if dist < -destination.runway_length_m:
-			_once("overshot", "You flew past the runway. Turn around is not possible yet: press R to retry.")
-	elif has_flown and a.speed_kt < 1.0:
-		_once("stopped", "Nicely done. Press R to fly again.")
+			_once("overshot", "You flew past the runway. Turning back is not possible yet: press R to retry.")
 
 
 func _on_lifted_off() -> void:
@@ -121,8 +126,7 @@ func _on_lifted_off() -> void:
 
 func _on_touched_down(vertical_speed_ms: float) -> void:
 	_last_touchdown_fpm = vertical_speed_ms * WorldScale.M_TO_FT * 60.0
-	if has_flown:
-		_said.erase("stopped")
+	if has_flown and not flight_over:
 		messages.say("Touchdown at %d ft/min. Hold B to brake." % absi(roundi(_last_touchdown_fpm)), true)
 
 

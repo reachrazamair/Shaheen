@@ -52,6 +52,12 @@ var flap_pos := 0.0                ## actual, moves toward flap_setting
 var gear_down := true              ## target
 var gear_pos := 1.0                ## actual: 1 down and locked, 0 up
 
+## False once the flight is over (crash or result screen): input is ignored.
+var controls_enabled := true
+var crashed := false
+## Pitch at the last touchdown, before the ground levels the nose.
+var touchdown_pitch := 0.0
+
 var _stall_timer := 0.0
 var _prop_angle := 0.0
 
@@ -102,6 +108,8 @@ func reset_state() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not controls_enabled:
+		return
 	if event.is_action_pressed("engine_toggle"):
 		engine_on = not engine_on and fuel_kg > 0.0
 	elif event.is_action_pressed("flaps_cycle"):
@@ -113,6 +121,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if crashed:
+		return
 	_stall_timer = maxf(0.0, _stall_timer - delta)
 	_prop_angle = fmod(_prop_angle + engine_rpm * 30.0 * delta, TAU)
 	_read_controls(delta)
@@ -124,6 +134,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _read_controls(delta: float) -> void:
+	if not controls_enabled:
+		throttle = move_toward(throttle, 0.0, throttle_rate * delta)
+		braking = on_ground
+		return
 	throttle += Input.get_axis("throttle_down", "throttle_up") * throttle_rate * delta
 	throttle = clampf(throttle, 0.0, 1.0)
 	braking = Input.is_action_pressed("brake")
@@ -155,7 +169,8 @@ func _update_pitch(delta: float) -> void:
 	var rotate_ms := data.rotate_speed_kt / WorldScale.MS_TO_KT
 	# Controls are weak at low speed and fully effective from rotate speed upward.
 	var authority := clampf(speed / rotate_ms, 0.25, 1.0)
-	var target_rate := Input.get_axis("pitch_down", "pitch_up") \
+	var stick := Input.get_axis("pitch_down", "pitch_up") if controls_enabled else 0.0
+	var target_rate := stick \
 			* deg_to_rad(data.pitch_rate_deg_s) * authority
 	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
 	if stalled:
@@ -225,6 +240,7 @@ func _integrate(delta: float) -> void:
 		velocity_m.y = 0.0
 		on_ground = true
 		stalled = false
+		touchdown_pitch = pitch
 		if pitch < 0.0:
 			pitch = 0.0
 		touched_down.emit(vy)
@@ -268,6 +284,25 @@ func _thrust(speed: float) -> float:
 	return t
 
 
+## Wreck the aircraft: stops dead on the ground, engine off, gear collapsed,
+## nose tipped down. The flight scene adds the smoke and the result screen.
+func crash() -> void:
+	crashed = true
+	controls_enabled = false
+	engine_on = false
+	engine_rpm = 0.0
+	throttle = 0.0
+	velocity_m = Vector2.ZERO
+	pos_m.y = 0.0
+	on_ground = true
+	stalled = false
+	gear_down = false
+	gear_pos = 0.0
+	pitch = deg_to_rad(-6.0)
+	_sync_node()
+	queue_redraw()
+
+
 func _sync_node() -> void:
 	position = Vector2(pos_m.x, -pos_m.y) * WorldScale.PX_PER_M
 	rotation = -pitch
@@ -291,7 +326,9 @@ func _draw_sprite_aircraft() -> void:
 	var size := data.sprite.get_size() * sc
 	# Everything below is drawn in texture pixels; the transform scales it down
 	# and puts the wheel bottoms (gear down) on the node origin.
-	draw_set_transform(Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc), 0.0, Vector2(sc, sc))
+	# On the ground with the gear (partly) up, the plane sits on its belly.
+	var sink := (1.0 - gear_pos) * data.sprite_gear_travel * sc if on_ground else 0.0
+	draw_set_transform(Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc + sink), 0.0, Vector2(sc, sc))
 
 	# Gear first, so it slides up and disappears behind the fuselage.
 	if data.sprite_gear and gear_pos > 0.05:
