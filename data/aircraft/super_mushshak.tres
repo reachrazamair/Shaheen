@@ -38,6 +38,7 @@ max_ground_pitch_deg = 12.0
 rolling_friction = 0.03
 brake_strength = 0.9
 max_speed_kt = 160.0
+gauge_vsi_max_fpm = 2000.0
 service_ceiling_m = 3000.0
 ceiling_fade_m = 1000.0
 length_m = 7.0

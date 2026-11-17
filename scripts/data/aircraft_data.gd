@@ -91,9 +91,11 @@ extends Resource
 ## Wheel-brake deceleration in g (0.9 = 0.9 g), scaled by weight on the wheels.
 @export var brake_strength := 0.9
 
-@export_group("Limits")
-## Gauge top end (later: overspeed warning).
+@export_group("Limits and gauges")
+## Airspeed gauge top end (later: overspeed warning). Yellow arc from 85%.
 @export var max_speed_kt := 160.0
+## Vertical speed gauge range, +/- this many ft/min.
+@export var gauge_vsi_max_fpm := 2000.0
 ## Thrust starts fading above this altitude...
 @export var service_ceiling_m := 3000.0
 ## ...and is gone this many metres higher (soft ceiling).

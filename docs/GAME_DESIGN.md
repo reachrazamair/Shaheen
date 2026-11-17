@@ -107,5 +107,6 @@ Distances between bases are compressed so flights take a few minutes, not real-w
 | Brakes (hold): wheel brakes on the ground, air brake / speed brake in the air | B |
 | Pause | Esc |
 | Restart mission | R |
+| Debug readout (tuning numbers) | F1 |
 
 All controls go through Godot InputMap actions (no hard-coded keys in scripts), so gamepad and touch can be mapped later. Rebinding in an options menu comes later.

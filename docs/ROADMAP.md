@@ -8,7 +8,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.2 Plane on a runway (throttle, brakes, rolling, camera, debug text)
 - [x] 1.3 Takeoff and flight (lift, pitch, stall, drag)
 - [x] 1.4 Flaps, gear, engine, fuel (E engine with spool-up, F flaps UP/TO/LDG, G gear for retractable aircraft, B air brake in flight, fuel burn and flame-out)
-- [ ] 1.5 Cockpit HUD layout (gauge panel, phase box, instructor message box)
+- [x] 1.5 Cockpit HUD layout (gauge panel, phase box, instructor message box)
 - [ ] 1.6 Two bases and parallax scenery
 - [ ] 1.7 Landing detection, grading, result screen
 - [ ] 1.8 Second aircraft (F-16) and aircraft-select screen

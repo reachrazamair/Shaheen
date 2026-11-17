@@ -1,0 +1,61 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scenes/ui/instrument_panel.gd" id="2_panel"]
+[ext_resource type="Script" path="res://scenes/ui/phase_box.gd" id="3_phase"]
+[ext_resource type="Script" path="res://scenes/ui/message_box.gd" id="4_msg"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="InstrumentPanel" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 270.0
+offset_bottom = 118.0
+mouse_filter = 2
+script = ExtResource("2_panel")
+
+[node name="PhaseBox" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 278.0
+offset_top = 4.0
+offset_right = 416.0
+offset_bottom = 52.0
+mouse_filter = 2
+script = ExtResource("3_phase")
+
+[node name="MessageBox" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 424.0
+offset_top = 4.0
+offset_right = 636.0
+offset_bottom = 66.0
+mouse_filter = 2
+script = ExtResource("4_msg")
+
+[node name="Text" type="Label" parent="MessageBox"]
+layout_mode = 0
+offset_left = 49.0
+offset_top = 5.0
+offset_right = 208.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.1, 0.12, 0.1, 1)
+theme_override_constants/line_spacing = -2
+theme_override_font_sizes/font_size = 8
+autowrap_mode = 3
+text = "..."
+
+[node name="DebugLabel" type="Label" parent="."]
+visible = false
+offset_left = 6.0
+offset_top = 124.0
+offset_right = 634.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.08, 0.15, 0.12, 1)
+theme_override_font_sizes/font_size = 8
+text = "debug"
