@@ -19,6 +19,9 @@ extends Node2D
 @export var hangar_width_m := 36.0
 @export var hangar_height_m := 12.0
 
+## Draw buildings this many times their true size (aircraft sprites are ~2-4x scale).
+@export var building_scale := 2.0
+
 @export_group("Colours")
 @export var window_color := Color(0.24, 0.3, 0.38)
 @export var window_lit_color := Color(0.95, 0.88, 0.55)
@@ -52,6 +55,12 @@ func m(x: float) -> float:
 	return x * WorldScale.PX_PER_M
 
 
+## Building sizes: metres scaled by building_scale (buildings are drawn larger
+## than true scale to match the ~2x aircraft sprites).
+func s(x: float) -> float:
+	return x * WorldScale.PX_PER_M * building_scale
+
+
 func _draw() -> void:
 	if data == null:
 		return
@@ -59,10 +68,10 @@ func _draw() -> void:
 	_draw_tower(m(tower_x_m))
 	var x := m(admin_x_m)
 	_draw_admin(x)
-	x += m(data.admin_block_length_m + 20.0)
+	x += s(data.admin_block_length_m) + m(20.0)
 	for i in data.hangar_count:
 		_draw_hangar(x, i + 1)
-		x += m(hangar_width_m + hangar_gap_m)
+		x += s(hangar_width_m) + m(hangar_gap_m)
 	_draw_windsock(m(windsock_x_m))
 
 
@@ -72,16 +81,16 @@ func _box(r: Rect2, fill: Color) -> void:
 
 
 func _draw_admin(x: float) -> void:
-	var floor_h := m(4.5)
-	var w := m(data.admin_block_length_m)
-	var h := floor_h * data.admin_block_floors + m(2.0)
+	var floor_h := s(4.5)
+	var w := s(data.admin_block_length_m)
+	var h := floor_h * data.admin_block_floors + s(2.0)
 	_box(Rect2(x, -h, w, h), data.building_color)
 	draw_rect(Rect2(x, -h, w, 3), data.roof_color)
 	# Window grid; a few windows are lit.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(data.short_name)
 	for f in data.admin_block_floors:
-		var wy := -h + m(2.0) + f * floor_h + 3
+		var wy := -h + s(2.0) + f * floor_h + 3
 		var wx := x + 5.0
 		while wx < x + w - 8:
 			var lit := rng.randf() < 0.15
@@ -93,26 +102,26 @@ func _draw_admin(x: float) -> void:
 
 
 func _draw_tower(x: float) -> void:
-	var h := m(data.tower_height_m)
-	var shaft_w := m(4.0)
-	var cab_w := m(9.0)
+	var h := s(data.tower_height_m)
+	var shaft_w := s(4.0)
+	var cab_w := s(9.0)
 	_box(Rect2(x - shaft_w * 0.5, -h, shaft_w, h), data.building_color)
 	for y in range(int(-h + 30), -6, 14):
 		draw_rect(Rect2(x - 2, y, 4, 6), window_color)
 	# Cab: wider glass room on top, dark roof, antenna.
-	var cab_y := -h - m(5.0)
-	_box(Rect2(x - cab_w * 0.5, cab_y, cab_w, m(5.0)), data.building_color)
-	draw_rect(Rect2(x - cab_w * 0.5 + 2, cab_y + 4, cab_w - 4, m(5.0) - 9), glass_color)
+	var cab_y := -h - s(5.0)
+	_box(Rect2(x - cab_w * 0.5, cab_y, cab_w, s(5.0)), data.building_color)
+	draw_rect(Rect2(x - cab_w * 0.5 + 2, cab_y + 4, cab_w - 4, s(5.0) - 9), glass_color)
 	for gx in range(int(x - cab_w * 0.5 + 8), int(x + cab_w * 0.5 - 2), 8):
-		draw_rect(Rect2(gx, cab_y + 4, 1, m(5.0) - 9), outline_color)
+		draw_rect(Rect2(gx, cab_y + 4, 1, s(5.0) - 9), outline_color)
 	draw_rect(Rect2(x - cab_w * 0.5 - 3, cab_y - 3, cab_w + 6, 4), data.roof_color)
 	draw_rect(Rect2(x - 1, cab_y - 18, 2, 15), outline_color)
 	draw_rect(Rect2(x - 1, cab_y - 20, 2, 2), Color(1, 0.2, 0.2))
 
 
 func _draw_hangar(x: float, number: int) -> void:
-	var w := m(hangar_width_m)
-	var h := m(hangar_height_m)
+	var w := s(hangar_width_m)
+	var h := s(hangar_height_m)
 	# Body plus a low arched roof.
 	_box(Rect2(x, -h, w, h), data.hangar_color)
 	var arch := PackedVector2Array()
@@ -144,7 +153,7 @@ func _draw_sign(x: float) -> void:
 
 
 func _draw_windsock(x: float) -> void:
-	var top := Vector2(x, -m(7.0))
+	var top := Vector2(x, -s(7.0))
 	draw_rect(Rect2(x - 1, top.y, 2, -top.y), Color(0.5, 0.5, 0.52))
 	# Sock streams to the left (wind from the right, i.e. a headwind for takeoff).
 	var seg := 4

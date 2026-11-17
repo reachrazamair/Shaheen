@@ -291,18 +291,24 @@ func _draw_sprite_aircraft() -> void:
 	# Sprite top-left so the wheel bottoms (gear down) sit on the node origin.
 	var o := Vector2(-roundf(size.x * 0.5), -data.sprite_wheel_bottom_y)
 	var outline := Color(0.11, 0.12, 0.15)
-	var hub := Color(0.6, 0.62, 0.65)
 
 	# Landing gear, drawn first so it retracts up behind the fuselage.
-	var leg := (data.sprite_wheel_bottom_y - data.sprite_belly_y) * gear_pos
-	if leg > 1.0:
-		for gx in [data.sprite_main_gear_x, data.sprite_nose_gear_x]:
-			var top := o + Vector2(gx, data.sprite_belly_y - 1.0)
-			draw_rect(Rect2(top.x - 1, top.y, 2, leg - 2), outline)
-			var wheel := Rect2(top.x - 2, top.y + leg - 4, 5, 5)
-			draw_rect(wheel, outline)
-			draw_rect(Rect2(wheel.position + Vector2(1, 1), Vector2(3, 3)), Color(0.22, 0.22, 0.24))
-			draw_rect(Rect2(wheel.position + Vector2(2, 2), Vector2(1, 1)), hub)
+	if gear_pos > 0.12:
+		for i in data.sprite_gear_x.size():
+			var is_main := i == 0
+			var gx := data.sprite_gear_x[i]
+			var top_y := data.sprite_gear_top_y[i] - 1.0
+			var r := data.sprite_gear_wheel_size[i] * 0.5
+			# Wheel centre slides from inside the belly (retracted) down to touching the ground.
+			var full := data.sprite_wheel_bottom_y - r
+			var wy := lerpf(top_y - r, full, gear_pos)
+			if is_main and data.sprite_main_twin_offset > 0.0:
+				_draw_wheel(o + Vector2(gx + data.sprite_main_twin_offset, wy - 1), r, true)
+			var leg_w := 2.0 if is_main else 1.0
+			draw_rect(Rect2(o.x + gx - leg_w * 0.5, o.y + top_y, leg_w, wy - top_y), Color(0.32, 0.33, 0.36))
+			if not is_main:   # nose-wheel fork
+				draw_rect(Rect2(o.x + gx - 2, o.y + wy - r - 1, 4, 1), Color(0.32, 0.33, 0.36))
+			_draw_wheel(o + Vector2(gx, wy), r, false)
 
 	draw_texture(data.sprite, o)
 
@@ -323,6 +329,13 @@ func _draw_sprite_aircraft() -> void:
 	else:
 		var span := r * absf(cos(_prop_angle))
 		draw_rect(Rect2(pc.x, pc.y - span, 2, span * 2 + 1), outline)
+
+
+## Tyre with a grey hub; the far-side wheel is drawn a little darker.
+func _draw_wheel(c: Vector2, r: float, far: bool) -> void:
+	var tyre := Color(0.07, 0.07, 0.08) if not far else Color(0.04, 0.04, 0.05)
+	draw_circle(c.round(), r, tyre)
+	draw_circle(c.round(), maxf(r * 0.45, 1.0), Color(0.62, 0.64, 0.68) if not far else Color(0.42, 0.43, 0.46))
 
 
 func _draw_placeholder(l: float, h: float) -> void:

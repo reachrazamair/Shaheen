@@ -114,15 +114,18 @@ extends Resource
 ## Sprite-pixel coordinates (from the sprite's top-left):
 ## y where the wheel bottoms sit when the gear is down (= the ground line).
 @export var sprite_wheel_bottom_y := 27.0
-## y of the fuselage underside where the gear legs attach.
-@export var sprite_belly_y := 21.0
-@export var sprite_main_gear_x := 37.0
-@export var sprite_nose_gear_x := 55.0
-@export var sprite_prop_center := Vector2(66, 15)
-@export var sprite_prop_radius := 9.0
+## One entry per gear leg (main first, then nose): x, where the leg leaves the
+## fuselage (y), and wheel diameter in px.
+@export var sprite_gear_x := PackedFloat32Array([77, 106])
+@export var sprite_gear_top_y := PackedFloat32Array([37, 34])
+@export var sprite_gear_wheel_size := PackedFloat32Array([8, 6])
+## Second (far-side) main wheel drawn this many px behind the first; 0 = none.
+@export var sprite_main_twin_offset := 5.0
+@export var sprite_prop_center := Vector2(124, 26)
+@export var sprite_prop_radius := 15.0
 ## Wing trailing edge, where the flap hangs from.
-@export var sprite_flap_hinge := Vector2(22, 6)
-@export var sprite_flap_length := 5.0
+@export var sprite_flap_hinge := Vector2(57, 20)
+@export var sprite_flap_length := 4.0
 @export var body_color := Color(0.95, 0.95, 0.95)
 @export var stripe_color := Color(0.82, 0.12, 0.12)
 @export var trim_color := Color(0.25, 0.4, 0.8)
