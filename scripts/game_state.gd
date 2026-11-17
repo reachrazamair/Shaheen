@@ -7,8 +7,8 @@ const MAX_NAME_LENGTH := 16
 ## Aircraft the player can choose on the start screen (in unlock order).
 const AIRCRAFT := [
 	"res://data/aircraft/super_mushshak.tres",
-	"res://data/aircraft/f16.tres",
 	"res://data/aircraft/mirage5.tres",
+	"res://data/aircraft/f16.tres",
 ]
 
 ## Night: the world canvas is multiplied by this colour (CanvasModulate).

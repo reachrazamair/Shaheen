@@ -8,8 +8,8 @@ const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
 ## Card text per aircraft (same order as GameState.AIRCRAFT).
 const AIRCRAFT_BLURB := [
 	"TRAINER",
-	"MULTI-ROLE",
 	"STRIKE FIGHTER",
+	"MULTI-ROLE",
 ]
 
 var _name_edit: LineEdit
@@ -67,7 +67,6 @@ func _build() -> void:
 	add_child(box)
 
 	box.add_child(_label("PROJECT SHAHEEN", 32, Color(0.08, 0.2, 0.14)))
-	box.add_child(_label("PAF ACADEMY ASGHAR KHAN, RISALPUR", 8, Color(0.1, 0.2, 0.25)))
 	box.add_child(_spacer(4))
 	box.add_child(_label("ENTER YOUR NAME", 16, Color(0.08, 0.15, 0.2)))
 
@@ -125,7 +124,6 @@ func _build() -> void:
 	go_row.add_child(_fly)
 	box.add_child(go_row)
 
-	box.add_child(_label("ROUTE: RISALPUR TO MASROOR, KARACHI", 8, Color(0.1, 0.2, 0.25)))
 
 	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   R RESTART", 8, Color.WHITE)
 	add_child(keys)
