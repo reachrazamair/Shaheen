@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dr2yffnwfd38i"
-path="res://.godot/imported/super_mushshak.png-13c333167783e3dbf6e2f642697776e2.ctex"
+uid="uid://bs8u1sygnfvc6"
+path="res://.godot/imported/super_mushshak_prop.png-65846d13a3ad7a902ff774144c97ce8e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/super_mushshak.png"
-dest_files=["res://.godot/imported/super_mushshak.png-13c333167783e3dbf6e2f642697776e2.ctex"]
+source_file="res://assets/sprites/super_mushshak_prop.png"
+dest_files=["res://.godot/imported/super_mushshak_prop.png-65846d13a3ad7a902ff774144c97ce8e.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

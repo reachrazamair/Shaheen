@@ -287,55 +287,34 @@ func _draw() -> void:
 
 
 func _draw_sprite_aircraft() -> void:
-	var size := data.sprite.get_size()
-	# Sprite top-left so the wheel bottoms (gear down) sit on the node origin.
-	var o := Vector2(-roundf(size.x * 0.5), -data.sprite_wheel_bottom_y)
-	var outline := Color(0.11, 0.12, 0.15)
+	var sc := data.sprite_scale
+	var size := data.sprite.get_size() * sc
+	# Everything below is drawn in texture pixels; the transform scales it down
+	# and puts the wheel bottoms (gear down) on the node origin.
+	draw_set_transform(Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc), 0.0, Vector2(sc, sc))
 
-	# Landing gear, drawn first so it retracts up behind the fuselage.
-	if gear_pos > 0.12:
-		for i in data.sprite_gear_x.size():
-			var is_main := i == 0
-			var gx := data.sprite_gear_x[i]
-			var top_y := data.sprite_gear_top_y[i] - 1.0
-			var r := data.sprite_gear_wheel_size[i] * 0.5
-			# Wheel centre slides from inside the belly (retracted) down to touching the ground.
-			var full := data.sprite_wheel_bottom_y - r
-			var wy := lerpf(top_y - r, full, gear_pos)
-			if is_main and data.sprite_main_twin_offset > 0.0:
-				_draw_wheel(o + Vector2(gx + data.sprite_main_twin_offset, wy - 1), r, true)
-			var leg_w := 2.0 if is_main else 1.0
-			draw_rect(Rect2(o.x + gx - leg_w * 0.5, o.y + top_y, leg_w, wy - top_y), Color(0.32, 0.33, 0.36))
-			if not is_main:   # nose-wheel fork
-				draw_rect(Rect2(o.x + gx - 2, o.y + wy - r - 1, 4, 1), Color(0.32, 0.33, 0.36))
-			_draw_wheel(o + Vector2(gx, wy), r, false)
-
-	draw_texture(data.sprite, o)
+	# Gear first, so it slides up and disappears behind the fuselage.
+	if data.sprite_gear and gear_pos > 0.05:
+		draw_texture(data.sprite_gear, Vector2(0, -(1.0 - gear_pos) * data.sprite_gear_travel))
+	draw_texture(data.sprite, Vector2.ZERO)
 
 	# Flaps: a red panel hanging from the wing trailing edge (40 degrees at LDG).
 	if flap_pos > 0.02:
-		var hinge := o + data.sprite_flap_hinge
-		var ang := deg_to_rad(20.0 * flap_pos)   # 0 = in line with the wing, 40 deg at LDG
-		var tip := hinge + Vector2(-cos(ang), sin(ang)) * data.sprite_flap_length   # back and down
-		draw_line(hinge, tip, outline, 3.0)
-		draw_line(hinge, tip, data.stripe_color, 1.0)
+		var hinge := data.sprite_flap_hinge
+		var ang := deg_to_rad(20.0 * flap_pos)
+		var tip := hinge + Vector2(-cos(ang), sin(ang)) * data.sprite_flap_length
+		draw_line(hinge, tip, Color(0.15, 0.15, 0.18), 4.0)
+		draw_line(hinge, tip, data.stripe_color, 2.0)
 
-	# Propeller: a turning blade when slow, a translucent disc when running.
-	var pc := o + data.sprite_prop_center
-	var r := data.sprite_prop_radius
-	if engine_rpm > 0.6:
-		draw_rect(Rect2(pc.x, pc.y - r, 1, r * 2), Color(0.75, 0.78, 0.82, 0.25 + 0.3 * engine_rpm))
-		draw_rect(Rect2(pc.x, pc.y - 1, 1, 2), outline)
+	# Propeller: the art's blurred blades while running, a still blade when stopped.
+	var pc := data.sprite_prop_center
+	if engine_rpm > 0.6 and data.sprite_prop:
+		var flicker := 0.75 + 0.25 * sin(_prop_angle * 3.0)
+		draw_texture(data.sprite_prop, Vector2.ZERO, Color(1, 1, 1, flicker))
 	else:
-		var span := r * absf(cos(_prop_angle))
-		draw_rect(Rect2(pc.x, pc.y - span, 2, span * 2 + 1), outline)
-
-
-## Tyre with a grey hub; the far-side wheel is drawn a little darker.
-func _draw_wheel(c: Vector2, r: float, far: bool) -> void:
-	var tyre := Color(0.07, 0.07, 0.08) if not far else Color(0.04, 0.04, 0.05)
-	draw_circle(c.round(), r, tyre)
-	draw_circle(c.round(), maxf(r * 0.45, 1.0), Color(0.62, 0.64, 0.68) if not far else Color(0.42, 0.43, 0.46))
+		var span := data.sprite_prop_radius * absf(cos(_prop_angle))
+		draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
+	draw_set_transform(Vector2.ZERO)
 
 
 func _draw_placeholder(l: float, h: float) -> void:

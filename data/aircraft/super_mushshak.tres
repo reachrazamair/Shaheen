@@ -1,7 +1,9 @@
-[gd_resource type="Resource" script_class="AircraftData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="AircraftData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
-[ext_resource type="Texture2D" path="res://assets/sprites/super_mushshak.png" id="2_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/super_mushshak_body.png" id="2_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/super_mushshak_gear.png" id="3_gear"]
+[ext_resource type="Texture2D" path="res://assets/sprites/super_mushshak_prop.png" id="4_prop"]
 
 [resource]
 script = ExtResource("1_data")
@@ -9,7 +11,7 @@ display_name = "Super Mushshak"
 mass_kg = 1100.0
 max_thrust_n = 8400.0
 thrust_zero_speed_kt = 215.0
-speed_response = 2.0
+speed_response = 1.4
 engine_spool_time_s = 1.5
 fuel_capacity_kg = 90.0
 fuel_burn_full_kg_s = 0.25
@@ -45,15 +47,15 @@ ceiling_fade_m = 1000.0
 length_m = 7.0
 height_m = 2.6
 sprite = ExtResource("2_sprite")
-sprite_wheel_bottom_y = 47.0
-sprite_gear_x = PackedFloat32Array(77, 106)
-sprite_gear_top_y = PackedFloat32Array(37, 34)
-sprite_gear_wheel_size = PackedFloat32Array(8, 6)
-sprite_main_twin_offset = 5.0
-sprite_prop_center = Vector2(124, 26)
-sprite_prop_radius = 15.0
-sprite_flap_hinge = Vector2(57, 20)
-sprite_flap_length = 4.0
+sprite_gear = ExtResource("3_gear")
+sprite_prop = ExtResource("4_prop")
+sprite_scale = 0.25
+sprite_wheel_bottom_y = 105.0
+sprite_gear_travel = 26.0
+sprite_prop_center = Vector2(272, 57)
+sprite_prop_radius = 34.0
+sprite_flap_hinge = Vector2(130, 40)
+sprite_flap_length = 8.0
 body_color = Color(0.95, 0.95, 0.95, 1)
 stripe_color = Color(0.82, 0.12, 0.12, 1)
 trim_color = Color(0.25, 0.4, 0.8, 1)

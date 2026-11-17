@@ -14,12 +14,12 @@ extends Camera2D
 ## Screen y of the ground line when flying low (360 = bottom edge).
 @export var ground_screen_y := 320.0
 ## Highest the plane may sit on screen when low (just below the HUD panels).
-@export var low_plane_screen_y := 185.0
+@export var low_plane_screen_y := 155.0
 ## Where the plane sits on screen when high.
-@export var high_plane_screen_y := 250.0
+@export var high_plane_screen_y := 240.0
 ## Altitude band (m) over which framing blends from "low" to "high".
-@export var blend_start_m := 30.0
-@export var blend_end_m := 120.0
+@export var blend_start_m := 40.0
+@export var blend_end_m := 130.0
 
 
 func _physics_process(_delta: float) -> void:

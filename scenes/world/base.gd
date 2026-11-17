@@ -20,7 +20,7 @@ extends Node2D
 @export var hangar_height_m := 12.0
 
 ## Draw buildings this many times their true size (aircraft sprites are ~2-4x scale).
-@export var building_scale := 2.0
+@export var building_scale := 1.0
 
 @export_group("Colours")
 @export var window_color := Color(0.24, 0.3, 0.38)
