@@ -117,6 +117,10 @@ func _on_touched_down(vertical_speed_ms: float) -> void:
 		_crash("Touched down off the runway.", fpm)
 	elif aircraft.gear_pos < 0.95:
 		_crash("The gear was up: belly landing.", fpm)
+	elif absf(rad_to_deg(aircraft.touchdown_pitch)) > 90.0:
+		_crash("Hit the ground upside down.", fpm)
+	elif rad_to_deg(aircraft.touchdown_pitch) > d.max_ground_pitch_deg + 3.0:
+		_crash("Tail strike: the nose was far too high at touchdown.", fpm)
 	elif rad_to_deg(aircraft.touchdown_pitch) < -d.max_nose_down_touchdown_deg:
 		_crash("Nose-first landing: flare before touchdown.", fpm)
 	elif fpm > d.hard_touchdown_fpm:

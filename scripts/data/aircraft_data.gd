@@ -96,8 +96,6 @@ extends Resource
 @export var pitch_rate_deg_s := 25.0
 ## How quickly the pitch rate builds/settles (smoothing; higher = snappier).
 @export var pitch_accel_deg_s2 := 150.0
-@export var max_pitch_up_deg := 35.0
-@export var max_pitch_down_deg := 30.0
 ## Below this speed the nose wheel stays on the ground.
 @export var rotate_speed_kt := 60.0
 ## Holding nose-up on the takeoff roll starts lifting the nose from this
@@ -172,6 +170,8 @@ extends Resource
 ## In texture px from the top-left:
 ## y where the wheel bottoms sit with the gear down (= the ground line).
 @export var sprite_wheel_bottom_y := 105.0
+## x of the main wheels: the aircraft's origin and ground pivot (0 = middle).
+@export var sprite_main_wheel_x := 0.0
 ## How far the gear layer slides up when fully retracted.
 @export var sprite_gear_travel := 26.0
 @export var sprite_prop_center := Vector2(272, 57)

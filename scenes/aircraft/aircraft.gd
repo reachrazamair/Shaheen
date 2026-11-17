@@ -3,7 +3,8 @@ extends Node2D
 ## The player's aircraft: a small custom 2D flight model (no RigidBody).
 ## Physics runs in metres: pos_m.x = distance along the route, pos_m.y = altitude.
 ## The node's pixel position/rotation are derived from the state every physics tick.
-## Node origin = the point where the wheels touch the ground; the nose points +x.
+## Node origin = where the MAIN wheels touch the ground (the aircraft pivots
+## there on the takeoff roll); the nose points +x.
 ##
 ## Forces each tick: thrust (along the nose), lift (perpendicular to the flight
 ## path), drag (against the flight path), gravity, and on the ground: normal
@@ -227,10 +228,11 @@ func _update_pitch(delta: float) -> void:
 	elevator = move_toward(elevator, stick, data.elevator_speed * delta)
 	var target_rate := stick \
 			* deg_to_rad(data.pitch_rate_deg_s) * authority
-	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
 	if stalled:
-		# The nose drops on its own; the player can push it down faster but not hold it up.
-		pitch_rate = minf(pitch_rate, -deg_to_rad(data.stall_nose_drop_deg_s))
+		# Optional nose-drop tendency while stalled (0 for both aircraft: the
+		# owner wants it to keep its attitude). The stick always works.
+		target_rate -= deg_to_rad(data.stall_nose_drop_deg_s)
+	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
 	pitch += pitch_rate * delta
 
 	if on_ground:
@@ -245,7 +247,9 @@ func _update_pitch(delta: float) -> void:
 			pitch = 0.0
 			pitch_rate = maxf(pitch_rate, 0.0)
 	else:
-		pitch = clampf(pitch, -deg_to_rad(data.max_pitch_down_deg), deg_to_rad(data.max_pitch_up_deg))
+		# No attitude limits in the air: loops, vertical climbs and inverted
+		# flight are all possible; the aerodynamics decide what happens.
+		pitch = wrapf(pitch, -PI, PI)
 
 
 func _integrate(delta: float) -> void:
@@ -307,22 +311,26 @@ func _integrate(delta: float) -> void:
 
 ## Fraction of max lift for a given angle of attack; also updates the stall state.
 func _lift_fraction(a: float) -> float:
+	# Works for any angle: positive and negative (pushing over) stalls alike.
 	var stall_a := deg_to_rad(data.stall_aoa_deg)
+	var abs_a := absf(a)
 	if on_ground:
 		stalled = false
-	elif a > stall_a:
+	elif abs_a > stall_a:
 		if not stalled:
 			_stall_timer = data.min_stall_time_s
 		stalled = true
-	elif stalled and _stall_timer <= 0.0 and a < stall_a - deg_to_rad(3.0):
+	elif stalled and _stall_timer <= 0.0 and abs_a < stall_a - deg_to_rad(3.0):
 		stalled = false   # recovers only after the minimum stall time and some hysteresis
 
-	if a <= stall_a:
-		var cl := data.zero_aoa_lift + (1.0 - data.zero_aoa_lift) * a / stall_a
-		return maxf(cl, -0.6)
-	# Past the stall angle lift collapses over ~5 degrees.
-	var t := clampf((a - stall_a) / deg_to_rad(5.0), 0.0, 1.0)
-	return lerpf(1.0, data.post_stall_lift, t)
+	var cl_edge := data.zero_aoa_lift + (1.0 - data.zero_aoa_lift) * signf(a)   # cl at +/- stall angle
+	if abs_a <= stall_a:
+		return data.zero_aoa_lift + (1.0 - data.zero_aoa_lift) * a / stall_a
+	# Past the stall angle lift collapses over ~5 degrees, then fades to nothing
+	# as the wing approaches broadside to the airflow (90 degrees) and beyond.
+	var t := clampf((abs_a - stall_a) / deg_to_rad(5.0), 0.0, 1.0)
+	var cl := lerpf(cl_edge, data.post_stall_lift * signf(a), t)
+	return cl * clampf(cos(abs_a) * 2.0, 0.0, 1.0)
 
 
 ## Interpolates a per-flap-setting array at the current (moving) flap position.
@@ -407,7 +415,7 @@ func _build_fragments(severity: float, impact_vel: Vector2, crash_pitch: float) 
 			row.append(v)
 		lattice.append(row)
 
-	var origin := Vector2(-tex_size.x * 0.5 * sc, -data.sprite_wheel_bottom_y * sc)
+	var origin := Vector2(-_pivot_x() * sc, -data.sprite_wheel_bottom_y * sc)
 	var forward := Vector2(impact_vel.x, 0.0) * WorldScale.PX_PER_M * (0.3 if big else 0.45)
 	var blast_centre := used.get_center()
 	_fragments.clear()
@@ -583,7 +591,7 @@ func _draw_sprite_aircraft() -> void:
 	# and puts the wheel bottoms (gear down) on the node origin.
 	# On the ground with the gear (partly) up, the plane sits on its belly.
 	var sink := (1.0 - gear_pos) * _gear_travel() * sc if on_ground else 0.0
-	draw_set_transform(Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc + sink), 0.0, Vector2(sc, sc))
+	draw_set_transform(Vector2(-_pivot_x() * sc, -data.sprite_wheel_bottom_y * sc + sink), 0.0, Vector2(sc, sc))
 
 	# Gear first, so it slides up and disappears behind the fuselage.
 	if gear_pos > 0.05:
@@ -601,7 +609,7 @@ func _draw_sprite_aircraft() -> void:
 	# Moving tailplane: rotates about its hinge, trailing edge up for nose-up.
 	if data.sprite_elevator:
 		var h := data.sprite_elevator_hinge
-		var base := Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc + sink)
+		var base := Vector2(-_pivot_x() * sc, -data.sprite_wheel_bottom_y * sc + sink)
 		draw_set_transform(base + h * sc, deg_to_rad(data.elevator_max_deg) * elevator, Vector2(sc, sc))
 		draw_texture(data.sprite_elevator, -h)
 		draw_set_transform(base, 0.0, Vector2(sc, sc))
@@ -624,6 +632,14 @@ func _draw_sprite_aircraft() -> void:
 			var span := data.sprite_prop_radius * absf(cos(_prop_angle))
 			draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
 	draw_set_transform(Vector2.ZERO)
+
+
+## Texture x of the node origin: the main wheels (so the aircraft rotates
+## about them on the ground and only the nose wheel lifts), or the middle.
+func _pivot_x() -> float:
+	if data.sprite_main_wheel_x > 0.0:
+		return data.sprite_main_wheel_x
+	return data.sprite.get_size().x * 0.5
 
 
 func _gear_travel() -> float:
