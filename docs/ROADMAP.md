@@ -27,6 +27,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
   - Third follow-up: instructor box and instrument panel swapped (instructor top-left, panel top-right) so the plane isn't hidden when climbing; bottom-left name plate now shows the PAF pilot wings badge above "AVN CDT" and the name.
   - Second follow-up: crashes shatter the airframe into many small irregular shards that slide to a stop (no bounce); big crashes explode (fireball, debris, ground fire), small ones scrape along with dust and thin smoke; nose lifts gradually on the takeoff roll from 70% of rotate speed; F-16 moving tailplane (elevator) follows the pitch keys; F-16 blackout (high positive G) and redout (strong negative G) screen effects above 250 kt.
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
+  - Web deploy done: https://shaheen-green.vercel.app (2026-11-17). Tuning pass from friends' feedback still to do.
 
 ### Open questions (owner to decide after playtesting)
 - **Camera:** keep the moving look-ahead camera? Should it zoom out as speed increases?

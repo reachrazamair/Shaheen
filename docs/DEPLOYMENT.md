@@ -1,5 +1,7 @@
 # Deployment: Vercel
 
+**Live:** https://shaheen-green.vercel.app (Vercel project `shaheen`, first deployed 2026-11-17). `build/web/.vercel/` holds the project link. Update it by double-clicking `deploy.bat`.
+
 For now the game is deployed **only to Vercel**, as a static website. Don't set up other hosts.
 
 A Godot **Web export** is just a folder of static files (`index.html`, `.js`, `.wasm`, `.pck`). Vercel serves that folder; there's no server code and no build step on Vercel's side. Godot does the "build" on the owner's machine.
@@ -57,6 +59,9 @@ vercel deploy build/web --prod
 Not required with Thread Support off. If loading feels slow, caching can be tuned later by placing a `vercel.json` in `build/web/` (and re-creating it after exports, or generating it from the deploy script). Leave this until there's a reason.
 
 ## 7. Notes and gotchas
+
+- If the editor's template download stalls, only two files are needed for this preset: `web_nothreads_debug.zip` and `web_nothreads_release.zip` in `%APPDATA%/Godot/export_templates/4.7.2.stable/` (both from the official `Godot_v4.7.2-stable_export_templates.tpz`).
+- `vercel link` writes a `.env.local` (an access token) into the folder it's run in. `deploy.bat` deletes it from `build/web` before uploading so it never ends up on the public site.
 
 - First load downloads the engine (roughly 10–40 MB). Keep assets small.
 - Browsers block audio until the player clicks or presses a key. The start screen handles this naturally.

@@ -8,5 +8,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-vercel deploy build/web --prod
+rem Never upload Vercel's local token file (vercel link creates it in this folder).
+if exist build\web\.env.local del /q build\web\.env.local
+vercel deploy build/web --prod --yes
 pause
