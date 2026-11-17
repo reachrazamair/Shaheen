@@ -30,6 +30,24 @@ extends Resource
 @export var ground_color := Color(0.42, 0.62, 0.3)
 @export var ground_tuft_color := Color(0.33, 0.52, 0.24)
 
+@export_group("Apron (parked aircraft, scenery)")
+## Front-view aircraft parked behind the runway (cycled in order). Empty = none.
+@export var parked_aircraft: Array[Texture2D] = []
+## Apron from/to (metres from the runway start). Each slot holds one aircraft;
+## every shelter_every-th slot is a hardened aircraft shelter, the rest are in the open.
+@export var apron_from_m := 400.0
+@export var apron_to_m := 700.0
+@export var parked_spacing_m := 13.0
+## 0 = no shelters.
+@export var shelter_every := 3
+## Squadron boards on the apron: text (two lines split by "|") and position.
+@export var squadron_boards := PackedStringArray()
+@export var squadron_board_x_m := PackedFloat32Array()
+## Big welcome board (lines), placed welcome_sign_x_m from the runway start
+## (negative = before the threshold, seen on final approach). Empty = none.
+@export var welcome_sign := PackedStringArray()
+@export var welcome_sign_x_m := -160.0
+
 @export_group("Landmarks")
 ## Background landmarks seen while flying in (scenes/world/landmarks.gd LAYOUT),
 ## e.g. Karachi: sea, port_cranes, teen_talwar, bahria_icon, mazar_e_quaid,

@@ -669,7 +669,8 @@ func _draw_sprite_aircraft() -> void:
 			var span := data.sprite_prop_radius * absf(cos(_prop_angle))
 			draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
 
-	if night_lights:
+	# Lights come on with the engine (E), not before.
+	if night_lights and engine_on:
 		_draw_lights()
 	draw_set_transform(Vector2.ZERO)
 

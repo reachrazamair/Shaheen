@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="BaseData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BaseData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/base_data.gd" id="1_base"]
+[ext_resource type="Texture2D" path="res://assets/sprites/k8_front_body.png" id="2_k8"]
 
 [resource]
 script = ExtResource("1_base")
@@ -19,3 +20,8 @@ mountain_color = Color(0.62, 0.68, 0.76, 1)
 mountain_height = 0.45
 hill_color = Color(0.44, 0.62, 0.34, 1)
 tree_color = Color(0.24, 0.44, 0.2, 1)
+parked_aircraft = Array[Texture2D]([ExtResource("2_k8")])
+apron_from_m = 415.0
+apron_to_m = 640.0
+parked_spacing_m = 13.0
+shelter_every = 4

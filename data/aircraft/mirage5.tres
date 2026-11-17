@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="AircraftData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="AircraftData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
 [ext_resource type="Texture2D" path="res://assets/sprites/mirage5_body.png" id="2_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/mirage5_gear.png" id="3_gear"]
 
 [resource]
 script = ExtResource("1_data")
@@ -60,11 +61,11 @@ service_ceiling_m = 6000.0
 ceiling_fade_m = 2000.0
 pilot_rank = "FLT LT"
 pilot_rank_call = "Flt Lt"
-light_nav_near = Vector2(79, 108)
-light_nav_far = Vector2(92, 104)
-light_tail = Vector2(13, 66)
-light_beacon = Vector2(6, 4)
-light_landing = Vector2(337, 137)
+light_nav_near = Vector2(79, 104)
+light_nav_far = Vector2(94, 101)
+light_tail = Vector2(16, 64)
+light_beacon = Vector2(6, 3)
+light_landing = Vector2(328, 131)
 cockpit_style = 2
 g_effects = true
 g_effect_min_speed_kt = 250.0
@@ -77,13 +78,15 @@ g_effect_recovery = 1.2
 length_m = 15.5
 height_m = 4.5
 sprite = ExtResource("2_sprite")
+sprite_gear = ExtResource("3_gear")
+sprite_gear_travel = 48.0
 sprite_scale = 0.25
-sprite_wheel_bottom_y = 151.0
-sprite_main_wheel_x = 168.0
-sprite_gear_x = PackedFloat32Array(168, 334)
-sprite_gear_top_y = PackedFloat32Array(113, 105)
-sprite_gear_wheel_size = PackedFloat32Array(18, 14)
-sprite_nozzle = Vector2(12, 88)
+sprite_wheel_bottom_y = 159.0
+sprite_main_wheel_x = 170.0
+sprite_gear_x = PackedFloat32Array()
+sprite_gear_top_y = PackedFloat32Array()
+sprite_gear_wheel_size = PackedFloat32Array()
+sprite_nozzle = Vector2(16, 89)
 afterburner_flame_length = 240.0
 afterburner_flame_width = 26.0
 sprite_flap_length = 0.0

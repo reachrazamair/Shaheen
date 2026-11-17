@@ -1,7 +1,9 @@
 extends Node2D
 ## A PAF base, built from BaseData: runway (child node), name board, windsock,
-## control tower, long admin block and hangars, all standing on the ground line
-## behind the runway. Node origin = runway start (threshold) on the ground.
+## control tower, long admin block, hangars, and an apron of parked front-view
+## aircraft (some in hardened shelters) with squadron boards, plus an optional
+## welcome board before the threshold. All standing on the ground line behind
+## the runway (scenery only). Node origin = runway start (threshold) on the ground.
 ## Placeholder pixel art drawn in code at final size (4 px per metre).
 
 @export var data: BaseData:
@@ -32,6 +34,16 @@ extends Node2D
 
 var _time := 0.0
 var _font: Font
+var _parked: Node2D
+## Shelter positions (px) for the current data.
+var _shelters: Array = []
+
+@export_group("Apron")
+## Hardened aircraft shelter size (metres) and parked aircraft size scale.
+@export var shelter_width_m := 17.0
+@export var shelter_height_m := 8.0
+@export var shelter_color := Color(0.66, 0.64, 0.58)
+@export var shelter_inside := Color(0.16, 0.16, 0.18)
 
 
 func _ready() -> void:
@@ -43,7 +55,44 @@ func _ready() -> void:
 func _apply() -> void:
 	if data:
 		runway.length_m = data.runway_length_m
+		_layout_apron()
 	queue_redraw()
+
+
+## Places parked aircraft along the apron: one per slot, every shelter_every-th
+## slot in a hardened shelter, leaving room around the squadron boards.
+func _layout_apron() -> void:
+	if _parked == null:
+		_parked = preload("res://scenes/world/parked_aircraft.gd").new()
+		add_child(_parked)
+	_shelters.clear()
+	var items: Array = []
+	if data.parked_aircraft.is_empty():
+		_parked.set_items(items)
+		return
+	var x := data.apron_from_m
+	var slot := 0
+	while x < data.apron_to_m:
+		var blocked := false
+		for bx in data.squadron_board_x_m:
+			if absf(x - bx) < 20.0:
+				blocked = true
+		if blocked:
+			x += 6.0
+			continue
+		var tex: Texture2D = data.parked_aircraft[slot % data.parked_aircraft.size()]
+		var size := tex.get_size() * 0.25
+		var in_shelter := data.shelter_every > 0 and slot % data.shelter_every == 0
+		var step := data.parked_spacing_m
+		if in_shelter:
+			step = shelter_width_m + 3.0
+			_shelters.append(m(x + step * 0.5))
+		var cx := m(x + step * 0.5)
+		items.append([tex, Rect2(cx - size.x * 0.5, -size.y, size.x, size.y),
+				Color(0.72, 0.72, 0.74) if in_shelter else Color.WHITE])
+		x += step
+		slot += 1
+	_parked.set_items(items)
 
 
 func _process(delta: float) -> void:
@@ -84,6 +133,73 @@ func _draw() -> void:
 		_draw_hangar(x, i + 1)
 		x += s(hangar_width_m) + m(hangar_gap_m)
 	_draw_windsock(m(windsock_x_m))
+	for sx in _shelters:
+		_draw_shelter(sx)
+	for i in data.squadron_boards.size():
+		if i < data.squadron_board_x_m.size():
+			_draw_squadron_board(m(data.squadron_board_x_m[i]), data.squadron_boards[i])
+	if not data.welcome_sign.is_empty():
+		_draw_welcome(m(data.welcome_sign_x_m))
+
+
+## Hardened aircraft shelter seen from the front: a low concrete arch with a
+## dark opening, earth berms on both sides, and a lamp over the door at night.
+func _draw_shelter(cx: float) -> void:
+	var w := m(shelter_width_m)
+	var h := m(shelter_height_m)
+	var berm := data.hill_color.darkened(0.1)
+	draw_colored_polygon(PackedVector2Array([Vector2(cx - w * 0.5 - 10, 0), Vector2(cx - w * 0.5, -h * 0.75), Vector2(cx - w * 0.5, 0)]), berm)
+	draw_colored_polygon(PackedVector2Array([Vector2(cx + w * 0.5, 0), Vector2(cx + w * 0.5, -h * 0.75), Vector2(cx + w * 0.5 + 10, 0)]), berm)
+	var outer := PackedVector2Array()
+	var inner := PackedVector2Array()
+	for i in 17:
+		var a := PI * i / 16.0
+		outer.append(Vector2(cx - cos(a) * w * 0.5, -sin(a) * h))
+		inner.append(Vector2(cx - cos(a) * (w * 0.5 - 4), -sin(a) * (h - 4)))
+	draw_colored_polygon(outer, shelter_color)
+	draw_polyline(outer, outline_color, 1.0)
+	draw_colored_polygon(inner, shelter_inside)
+	if _night():
+		draw_circle(Vector2(cx, -h + 2), 2.0, _lamp(Color(1.0, 0.85, 0.55)))
+
+
+## Squadron board: deep blue with a gold frame, squadron on the first line,
+## its name large in gold on the second. Text: "LINE 1|LINE 2". Mounted high on
+## tall posts so a jet stopped in front of it doesn't hide it.
+func _draw_squadron_board(cx: float, text: String) -> void:
+	var lines := text.split("|")
+	var l1 := lines[0]
+	var l2 := lines[1] if lines.size() > 1 else ""
+	var w1 := _font.get_string_size(l1, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+	var w2 := _font.get_string_size(l2, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	var w := maxf(w1, w2) + 12.0
+	var r := Rect2(cx - w * 0.5, -80, w, 30)
+	draw_rect(Rect2(r.position.x + 6, r.end.y, 3, -r.end.y), outline_color)
+	draw_rect(Rect2(r.end.x - 9, r.end.y, 3, -r.end.y), outline_color)
+	draw_rect(r, Color(0.85, 0.68, 0.25))
+	draw_rect(r.grow(-2), Color(0.08, 0.16, 0.38))
+	var gold := _lamp(Color(1.0, 0.82, 0.35)) if _night() else Color(1.0, 0.82, 0.35)
+	var white := _lamp(Color.WHITE) if _night() else Color.WHITE
+	draw_string(_font, Vector2(cx - w1 * 0.5, r.position.y + 11), l1, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, white)
+	draw_string(_font, Vector2(cx - w2 * 0.5, r.position.y + 26), l2, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gold)
+
+
+## Big welcome board before the runway: PAF green with a white frame.
+func _draw_welcome(cx: float) -> void:
+	var l1 := data.welcome_sign[0]
+	var l2 := data.welcome_sign[1] if data.welcome_sign.size() > 1 else ""
+	var w1 := _font.get_string_size(l1, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	var w2 := _font.get_string_size(l2, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+	var w := maxf(w1, w2) + 16.0
+	var r := Rect2(cx - w * 0.5, -48, w, 32)
+	for px in [r.position.x + 10, cx - 1.5, r.end.x - 13]:
+		draw_rect(Rect2(px, r.end.y, 3, 16), outline_color)
+	draw_rect(r, Color.WHITE)
+	draw_rect(r.grow(-2), Color(0.02, 0.36, 0.2))
+	var white := _lamp(Color.WHITE) if _night() else Color.WHITE
+	var gold := _lamp(Color(1.0, 0.85, 0.4)) if _night() else Color(1.0, 0.85, 0.4)
+	draw_string(_font, Vector2(cx - w1 * 0.5, r.position.y + 15), l1, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, white)
+	draw_string(_font, Vector2(cx - w2 * 0.5, r.position.y + 27), l2, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, gold)
 
 
 func _box(r: Rect2, fill: Color) -> void:

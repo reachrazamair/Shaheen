@@ -9,6 +9,7 @@ aligned layers to assets/sprites/<name>_<layer>.png:
   body - the aircraft (minus gear/prop if those are split out)
   gear - landing gear cut from the art (slides up to retract), optional
   prop - propeller blades (shown while the engine runs), optional
+Front-view configs (k8_front, f16_front) make parked-aircraft scenery.
   elevator - the tailplane cut out of the body (drawn rotating with the
              stick), optional; the hole left in the body is filled with a
              dark fuselage grey where it overlaps the fuselage
@@ -49,13 +50,28 @@ CONFIGS = {
                      "fill": (66, 70, 76, 255), "fill_min_x": 13},
     },
     "mirage5": {
-        "src": "docs/reference/mirage5_sprite_source.png",
+        "src": "docs/reference/mirage5_sprite_source.png",   # owner's art with the gear down
         "display_width": 118,  # world px; 15.5 m, about the F-16's length
-        "gear_regions": [],    # art shows the gear retracted: drawn in code
+        "gear_regions": [(285, 336, 266, 266), (548, 596, 219, 219)],   # main wheel, nose gear
+        "gear_cut_y": 219,
         "prop": None,
-        "points": {"nozzle": (45, 190), "main_gear_top": (300, 230), "nose_gear_top": (575, 216),
-                   "wheel_bottom": (0, 292), "light_nav_near": (150, 221), "light_nav_far": (172, 214),
-                   "light_tail": (40, 150), "light_beacon": (26, 46), "light_landing": (580, 270)},
+        "points": {"nozzle": (55, 182), "main_wheel": (312, 0), "light_nav_near": (160, 208),
+                   "light_nav_far": (185, 203), "light_tail": (55, 140), "light_beacon": (38, 38),
+                   "light_landing": (575, 252)},
+    },
+    # Front views for parked aircraft (base scenery, not flyable). "erase" blanks
+    # the phone share/copy/download buttons in the top-right of the screenshots.
+    "k8_front": {
+        "src": "docs/reference/k8_front_source.png",
+        "display_width": 40,   # K-8 span 9.6 m
+        "erase": [(680, 0, 853, 50)],
+        "gear_regions": [], "prop": None, "points": {},
+    },
+    "f16_front": {
+        "src": "docs/reference/f16_front_source.png",
+        "display_width": 42,   # F-16 span 9.96 m incl. wingtip missiles
+        "erase": [(680, 0, 852, 50)],
+        "gear_regions": [], "prop": None, "points": {},
     },
 }
 
@@ -99,6 +115,8 @@ def remove_background(im):
 
 def build(name, cfg):
     im = Image.open(cfg["src"]).convert("RGBA")
+    for box in cfg.get("erase", []):
+        im.paste((255, 255, 255, 255), box)
     remove_background(im)
     w, h = im.size
     px = im.load()
