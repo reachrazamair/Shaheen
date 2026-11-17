@@ -21,11 +21,13 @@ The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
 ## 3. Flight model (arcade)
 
 Not real aerodynamics, but it should *behave* believably. The owner wants the motion to follow a realistic flight path: energy matters, too slow means a stall, more speed means more lift and a climb, friction and drag always act.
+- **Engine** must be started (E) before the throttle does anything; it takes a moment to spool up.
 - **Throttle** sets thrust. Heavier, slower aircraft accelerate slowly. Fighters are punchy.
 - **Pitch** (nose up and down) is the main control. The plane climbs when pitched up with enough speed.
 - **Lift** grows with speed. Below stall speed the plane loses lift and the nose drops.
 - **Flaps** (Up / Takeoff / Landing) give more lift at low speed but add drag.
-- **Landing gear** must be down to land. Gear down adds drag. Retract it after takeoff.
+- **Landing gear** must be down to land. Gear down adds drag. Retract it after takeoff. Some aircraft (e.g. the Super Mushshak) have **fixed gear**: always down, G does nothing.
+- **Air brake:** B in the air adds a lot of drag to slow down (B on the ground = wheel brakes).
 - **Brakes** slow the plane on the ground.
 - **Fuel** burns with throttle. Running out means the engine stops (glide).
 - **Weight** (later, via the mission planner): more fuel or stores means a longer takeoff roll, slower climb and higher stall speed.
