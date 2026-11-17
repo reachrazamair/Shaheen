@@ -116,7 +116,7 @@ func _on_lifted_off() -> void:
 	if state == State.DONE:
 		return
 	if state == State.ROLLOUT:
-		hud.messages.say("You BOUNCED it! Hold the nose, settle it down! Aram se!", true)
+		hud.messages.say("You BOUNCED it, d*mn it! Hold the nose, settle it down! Gently!", true)
 	_airborne_once = true
 	state = State.FLYING
 
@@ -187,7 +187,7 @@ func _finish_landing() -> void:
 		result["title"] = GRADES[g] + " LANDING"
 		reasons.push_front("Landed at %s." % destination.display_name)
 		result["reasons"] = reasons
-		var praise := ["Perfect. Shabash, %s. Don't let it go to your head.", "Good landing, %s. Not bad. Not bad at all.",
+		var praise := ["Perfect. Well done, %s. Don't let it go to your head.", "Good landing, %s. Not bad. Not bad at all.",
 				"Firm, %s. FLARE more next time! Again!", "HARD landing, %s! You want to break my aircraft?!"]
 		hud.messages.say(praise[g] % GameState.pilot_call(), true)
 	_end(result)
@@ -213,7 +213,7 @@ func _crash(reason: String, fpm := -1.0) -> void:
 	result["reasons"] = [reason]
 	if fpm >= 0.0:
 		result["touchdown_fpm"] = fpm
-	hud.messages.say("You CRASHED it! %s R, phir se karo!" % reason, true)
+	hud.messages.say("You CRASHED my sh*tting aircraft! %s R. Do it AGAIN!" % reason, true)
 	_end(result)
 
 
