@@ -74,6 +74,7 @@ var night_lights := false
 var takeoff_climb := false
 ## True on the ground after a touchdown (nose comes down by itself when slow).
 var landing_roll := false
+var _bounced := false            ## already hopped once this landing (only one hop per landing)
 ## G felt by the pilot (along the seat axis, 1 = level flight), smoothed.
 var g_load := 1.0
 ## 0..1 screen effects driven by g_load (see AircraftData "Pilot G effects").
@@ -156,6 +157,7 @@ func reset_state() -> void:
 	g_load = 1.0
 	takeoff_climb = false
 	landing_roll = false
+	_bounced = false
 	blackout = 0.0
 	redout = 0.0
 	_prev_vel = Vector2.ZERO
@@ -315,6 +317,7 @@ func _integrate(delta: float) -> void:
 			on_ground = false
 			takeoff_climb = true
 			landing_roll = false
+			_bounced = false
 			lifted_off.emit()
 		else:
 			# Ground pushes back; friction and brakes scale with weight on the wheels.
@@ -344,6 +347,24 @@ func _integrate(delta: float) -> void:
 		if pitch < 0.0:
 			pitch = 0.0
 		touched_down.emit(vy)
+		_maybe_bounce(vy)
+
+
+## A firm-but-legal touchdown hops the aircraft back up a little (see
+## AircraftData.bounce_*). Runs after touched_down, so a crash wins. Only one
+## hop per landing: the next contact just settles (the gear soaks it up).
+func _maybe_bounce(vy: float) -> void:
+	var fpm := absf(vy) * WorldScale.M_TO_FT * 60.0
+	if crashed or _bounced or fpm <= data.bounce_from_fpm or fpm > data.hard_touchdown_fpm:
+		return
+	var t := clampf((fpm - data.bounce_from_fpm) / maxf(data.hard_touchdown_fpm - data.bounce_from_fpm, 1.0), 0.0, 1.0)
+	var h := lerpf(data.bounce_height_min_m, data.bounce_height_max_m, t)
+	velocity_m.y = sqrt(2.0 * WorldScale.GRAVITY * h)
+	pos_m.y = 0.01
+	_bounced = true
+	on_ground = false
+	landing_roll = false
+	lifted_off.emit()
 
 
 ## Fraction of max lift for a given angle of attack; also updates the stall state.

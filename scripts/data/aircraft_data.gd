@@ -129,6 +129,14 @@ extends Resource
 @export var good_touchdown_fpm := 300.0
 @export var firm_touchdown_fpm := 500.0
 @export var hard_touchdown_fpm := 800.0
+## Bounce: a touchdown harder than bounce_from_fpm (but not a crash) makes the
+## aircraft hop back into the air, like a real firm landing that "skips".
+## Hop height grows from bounce_height_min_m just above bounce_from_fpm to
+## bounce_height_max_m at hard_touchdown_fpm (gravity only; lift lets it float
+## a little higher). Softer than bounce_from_fpm = no bounce at all.
+@export var bounce_from_fpm := 500.0
+@export var bounce_height_min_m := 0.3
+@export var bounce_height_max_m := 1.2
 ## Touching down with the nose more than this far below the horizon = crash.
 @export var max_nose_down_touchdown_deg := 2.0
 ## Running off the end of a runway (or off it onto grass) faster than this = crash;
