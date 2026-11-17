@@ -39,6 +39,7 @@ const LAYOUT := {
 var _items: Array = []   # [kind, local x px, seed]
 var _ref_cam_y := 0.0
 var _time := 0.0
+var _redraw_timer := 0.0
 
 
 ## kinds: BaseData.landmarks; base_x_m: the base's runway threshold (route metres).
@@ -65,23 +66,24 @@ func _process(delta: float) -> void:
 	_time += delta
 	var c := camera.get_screen_center_position()
 	position = Vector2(c.x * (1.0 - factor.x), (c.y - _ref_cam_y) * (1.0 - factor.y) - base_lift_px)
-	queue_redraw()
+	# Everything is drawn once; only at night is it redrawn a few times a
+	# second so the beacons blink (redrawing every frame cost a lot).
+	_redraw_timer -= delta
+	if GameState.night and _redraw_timer <= 0.0:
+		_redraw_timer = 0.15
+		queue_redraw()
 
 
 func _draw() -> void:
 	if camera == null:
 		return
-	var c := camera.get_screen_center_position()
-	var view_w := get_viewport_rect().size.x
-	var left := c.x - view_w * 0.5 - position.x - 200.0
-	var right := left + view_w + 400.0
 	# Sea first (it lies behind everything else).
 	for it in _items:
-		if it[0] == "sea" and it[1] > left - 600 and it[1] < right + 600:
+		if it[0] == "sea":
 			_sea(it[1])
 	for it in _items:
 		var x: float = it[1]
-		if it[0] == "sea" or x < left or x > right:
+		if it[0] == "sea":
 			continue
 		var s: float = SCALE.get(it[0], 1.0)
 		draw_set_transform(Vector2(x, 0), 0.0, Vector2(s, s))

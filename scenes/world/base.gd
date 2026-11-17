@@ -35,6 +35,8 @@ extends Node2D
 var _time := 0.0
 var _font: Font
 var _parked: Node2D
+## Child layer for the animated bits (see _process).
+var _anim: Node2D
 ## Shelter positions (px) for the current data.
 var _shelters: Array = []
 
@@ -49,6 +51,9 @@ var _shelters: Array = []
 func _ready() -> void:
 	_font = ThemeDB.fallback_font if not ProjectSettings.get_setting("gui/theme/custom_font") \
 			else load(ProjectSettings.get_setting("gui/theme/custom_font"))
+	_anim = Node2D.new()
+	add_child(_anim)
+	_anim.draw.connect(_draw_anim)
 	_apply()
 
 
@@ -95,9 +100,23 @@ func _layout_apron() -> void:
 	_parked.set_items(items)
 
 
+## Only the small moving parts (windsock, tower beacon) are redrawn each
+## frame, on their own child layer; the rest of the base is drawn once.
 func _process(delta: float) -> void:
 	_time += delta
-	queue_redraw()   # windsock flutter
+	if _anim:
+		_anim.queue_redraw()
+
+
+func _draw_anim() -> void:
+	if data == null:
+		return
+	_draw_windsock(m(windsock_x_m))
+	if _night() and fmod(_time, 1.5) < 0.9:
+		var cab_y := -s(data.tower_height_m) - s(5.0)
+		var bp := Vector2(m(tower_x_m), cab_y - 19)
+		_anim.draw_circle(bp, 6, _lamp(Color(1, 0.15, 0.1, 0.15)))
+		_anim.draw_circle(bp, 2.5, _lamp(Color(1, 0.2, 0.15)))
 
 
 ## Night: lit windows and lights glow (GameState.glow beats the night tint).
@@ -132,7 +151,6 @@ func _draw() -> void:
 	for i in data.hangar_count:
 		_draw_hangar(x, i + 1)
 		x += s(hangar_width_m) + m(hangar_gap_m)
-	_draw_windsock(m(windsock_x_m))
 	for sx in _shelters:
 		_draw_shelter(sx)
 	for i in data.squadron_boards.size():
@@ -246,10 +264,6 @@ func _draw_tower(x: float) -> void:
 	draw_rect(Rect2(x - cab_w * 0.5 - 3, cab_y - 3, cab_w + 6, 4), data.roof_color)
 	draw_rect(Rect2(x - 1, cab_y - 18, 2, 15), outline_color)
 	draw_rect(Rect2(x - 1, cab_y - 20, 2, 2), Color(1, 0.2, 0.2))
-	if _night() and fmod(_time, 1.5) < 0.9:
-		var bp := Vector2(x, cab_y - 19)
-		draw_circle(bp, 6, _lamp(Color(1, 0.15, 0.1, 0.15)))
-		draw_circle(bp, 2.5, _lamp(Color(1, 0.2, 0.15)))
 
 
 func _draw_hangar(x: float, number: int) -> void:
@@ -287,11 +301,11 @@ func _draw_sign(x: float) -> void:
 
 func _draw_windsock(x: float) -> void:
 	var top := Vector2(x, -s(7.0))
-	draw_rect(Rect2(x - 1, top.y, 2, -top.y), Color(0.5, 0.5, 0.52))
+	_anim.draw_rect(Rect2(x - 1, top.y, 2, -top.y), Color(0.5, 0.5, 0.52))
 	# Sock streams to the left (wind from the right, i.e. a headwind for takeoff).
 	var seg := 4
 	for i in seg:
 		var wobble := sin(_time * 6.0 + i) * (i * 0.7)
 		var p := top + Vector2(-2 - i * 4, 1 + i * 0.6 + wobble)
 		var col := Color(1.0, 0.45, 0.1) if i % 2 == 0 else Color.WHITE
-		draw_rect(Rect2(p.x - 4, p.y, 4, 4 - i * 0.5), col)
+		_anim.draw_rect(Rect2(p.x - 4, p.y, 4, 4 - i * 0.5), col)

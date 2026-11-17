@@ -30,27 +30,11 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	# Background: sky gradient, ground strip and the trainer on the runway.
-	var sky := TextureRect.new()
-	var grad := Gradient.new()
-	grad.colors = PackedColorArray([Color(0.42, 0.63, 0.86), Color(0.85, 0.92, 0.96)])
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill_to = Vector2(0, 1)
-	sky.texture = tex
-	sky.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sky.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(sky)
-	var ground := ColorRect.new()
-	ground.color = Color(0.42, 0.62, 0.3)
-	ground.position = Vector2(0, 318)
-	ground.size = Vector2(640, 42)
-	add_child(ground)
-	var runway := ColorRect.new()
-	runway.color = Color(0.32, 0.32, 0.35)
-	runway.position = Vector2(0, 318)
-	runway.size = Vector2(640, 4)
-	add_child(runway)
+	# Background: a PAF airfield at golden hour (scenes/ui/menu_backdrop.gd),
+	# with the selected aircraft on the runway in front of it.
+	var backdrop: Control = preload("res://scenes/ui/menu_backdrop.gd").new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
 	_preview = TextureRect.new()
 	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

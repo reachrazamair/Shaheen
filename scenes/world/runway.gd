@@ -28,6 +28,7 @@ extends Node2D
 @export var rabbit_period_s := 1.0
 
 var _time := 0.0
+var _redraw_timer := 0.0
 
 
 func _night() -> bool:
@@ -38,7 +39,11 @@ func _night() -> bool:
 func _process(delta: float) -> void:
 	if _night():
 		_time += delta
-		queue_redraw()
+		# The flashing approach lights only need ~15 updates a second.
+		_redraw_timer -= delta
+		if _redraw_timer <= 0.0:
+			_redraw_timer = 1.0 / 15.0
+			queue_redraw()
 
 
 func _draw() -> void:

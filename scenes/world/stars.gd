@@ -8,6 +8,7 @@ extends Control
 
 var _stars: Array = []   # [position (0..1), size, phase]
 var _time := 0.0
+var _redraw_timer := 0.0
 
 
 func _ready() -> void:
@@ -22,7 +23,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
-	queue_redraw()
+	# Twinkling doesn't need every frame.
+	_redraw_timer -= delta
+	if _redraw_timer <= 0.0:
+		_redraw_timer = 0.1
+		queue_redraw()
 
 
 func _draw() -> void:

@@ -24,6 +24,16 @@ enum Kind { MOUNTAINS, HILLS, TREES, CLOUDS }
 @export var cloud_max_px := 2400.0
 
 var _shapes: Array = []      # Array of [PackedVector2Array, shade] for one tile
+## The same shapes cut into triangles once: [triangle vertices (3 per triangle), shade].
+## The whole band is then sent as ONE triangle array per redraw (one draw call)
+## instead of one call per cloud puff / tree.
+var _tris: Array = []
+## What the current drawing was made for. The band is only redrawn when one of
+## these changes (moving it for parallax is free); redrawing every frame was
+## the main cause of low frame rates, especially in the browser.
+var _drawn_first := -999999
+var _drawn_color := Color(-1, -1, -1)
+var _drawn_height := -1.0
 var _ref_cam_y := 0.0
 
 
@@ -39,7 +49,14 @@ func _process(_delta: float) -> void:
 		return
 	var c := camera.get_screen_center_position()
 	position = Vector2(c.x * (1.0 - factor.x), (c.y - _ref_cam_y) * (1.0 - factor.y))
-	queue_redraw()
+	var first := _first_tile(c)
+	if first != _drawn_first or absf(height_scale - _drawn_height) > 0.005 or absf(color.r - _drawn_color.r) + absf(color.g - _drawn_color.g) + absf(color.b - _drawn_color.b) > 0.012:
+		queue_redraw()
+
+
+func _first_tile(c: Vector2) -> int:
+	var left := c.x - get_viewport_rect().size.x * 0.5 - position.x
+	return floori(left / repeat_px)
 
 
 func _draw() -> void:
@@ -47,14 +64,26 @@ func _draw() -> void:
 		return
 	var c := camera.get_screen_center_position()
 	var view_w := get_viewport_rect().size.x
-	var left := c.x - view_w * 0.5 - position.x
-	var first := floori(left / repeat_px)
+	var first := _first_tile(c)
+	_drawn_first = first
+	_drawn_color = color
+	_drawn_height = height_scale
 	var tiles := ceili(view_w / repeat_px) + 1
+	var sy := height_scale if kind != Kind.CLOUDS else 1.0
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
 	for k in range(first, first + tiles + 1):
-		draw_set_transform(Vector2(k * repeat_px, 0), 0.0, Vector2(1.0, height_scale if kind != Kind.CLOUDS else 1.0))
-		for s in _shapes:
-			draw_colored_polygon(s[0], _shade(s[1]))
-	draw_set_transform(Vector2.ZERO)
+		var ox := k * repeat_px
+		for tr in _tris:
+			var col := _shade(tr[1])
+			for v in tr[0]:
+				points.append(Vector2(v.x + ox, v.y * sy))
+				colors.append(col)
+	var indices := PackedInt32Array()
+	indices.resize(points.size())
+	for i in points.size():
+		indices[i] = i
+	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), indices, points, colors)
 
 
 func _shade(amount: float) -> Color:
@@ -76,6 +105,14 @@ func _build_tile() -> void:
 			_build_trees(rng)
 		Kind.CLOUDS:
 			_build_clouds(rng)
+	_tris.clear()
+	for s in _shapes:
+		var poly: PackedVector2Array = s[0]
+		var idx := Geometry2D.triangulate_polygon(poly)
+		var verts := PackedVector2Array()
+		for i in idx:
+			verts.append(poly[i])
+		_tris.append([verts, s[1]])
 
 
 ## A seamless ridge: sum of sines whose periods divide the tile width.
