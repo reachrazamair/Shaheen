@@ -6,7 +6,7 @@ Work proceeds in small chunks. Only work on the current chunk. Tick boxes when d
 Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.1 Project setup (settings, folders, input map, git)
 - [x] 1.2 Plane on a runway (throttle, brakes, rolling, camera, debug text)
-- [ ] 1.3 Takeoff and flight (lift, pitch, stall, drag)
+- [x] 1.3 Takeoff and flight (lift, pitch, stall, drag)
 - [ ] 1.4 Flaps, gear, engine, fuel
   - TODO: E starts/stops the engine (until then thrust works without it). B also acts as an air brake in flight.
 - [ ] 1.5 Cockpit HUD layout (gauge panel, phase box, instructor message box)
@@ -14,6 +14,12 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [ ] 1.7 Landing detection, grading, result screen
 - [ ] 1.8 Second aircraft (F-16) and aircraft-select screen
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
+
+### Open questions (owner to decide after playtesting)
+- **Camera:** keep the moving look-ahead camera? Should it zoom out as speed increases?
+- **Throttle:** keep "hold ↑/↓ to move the lever" (lever stays where you leave it), or switch to a different scheme (e.g. fixed steps)?
+- Throttle response was sped up in 1.3 (lever idle→full in ~0.6 s, stronger static prop thrust). Re-check feel.
+- Above ~30 m altitude the ground leaves the screen and the sky is plain until clouds/parallax arrive in 1.6.
 
 **Everything below Phase 1 is on hold.** Don't start any of it until the owner says so. It's listed only so the prototype code stays easy to extend.
 
