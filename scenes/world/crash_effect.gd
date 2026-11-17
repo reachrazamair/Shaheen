@@ -15,6 +15,11 @@ var _blobs: Array = []     # fireball blobs: [offset, radius, delay]
 var _rng := RandomNumberGenerator.new()
 
 
+## Fire and sparks stay bright at night.
+func _g(c: Color) -> Color:
+	return GameState.glow(c)
+
+
 func _big() -> bool:
 	return severity >= Aircraft.BIG_CRASH_SEVERITY
 
@@ -53,7 +58,7 @@ func _draw() -> void:
 func _draw_explosion() -> void:
 	# Flash.
 	if _t < 0.12:
-		draw_circle(Vector2(0, -6), 34, Color(1, 1, 0.9, 0.85 * (1.0 - _t / 0.12)))
+		draw_circle(Vector2(0, -6), 34, _g(Color(1, 1, 0.9, 0.85 * (1.0 - _t / 0.12))))
 	# Fireball: blobs swell, rise a little, go from yellow to orange to dark red.
 	for b in _blobs:
 		var t: float = (_t - b[2]) / fireball_time_s
@@ -62,17 +67,17 @@ func _draw_explosion() -> void:
 		var pos: Vector2 = b[0] + Vector2(0, -6 - 18 * t)
 		var r: float = b[1] * (0.4 + 0.9 * sqrt(t))
 		var a := 1.0 - t * t
-		draw_circle(pos, r, Color(0.75, 0.2, 0.05, a * 0.8))
-		draw_circle(pos, r * 0.75, Color(1.0, 0.5, 0.1, a * 0.9))
+		draw_circle(pos, r, _g(Color(0.75, 0.2, 0.05, a * 0.8)))
+		draw_circle(pos, r * 0.75, _g(Color(1.0, 0.5, 0.1, a * 0.9)))
 		if t < 0.6:
-			draw_circle(pos, r * 0.45, Color(1.0, 0.9, 0.5, a))
+			draw_circle(pos, r * 0.45, _g(Color(1.0, 0.9, 0.5, a)))
 	# Burning ground fire after the fireball.
 	if _t > 0.4:
 		for k in 5:
 			var flick := 0.6 + 0.4 * sin(_t * 13.0 + k * 2.1)
 			var x := -14.0 + k * 7.0
 			draw_colored_polygon(PackedVector2Array([Vector2(x - 4, 0), Vector2(x + 4, 0),
-					Vector2(x + sin(_t * 9.0 + k) * 2.0, -9.0 * flick - 3.0)]), Color(1.0, 0.55, 0.1, 0.85))
+					Vector2(x + sin(_t * 9.0 + k) * 2.0, -9.0 * flick - 3.0)]), _g(Color(1.0, 0.55, 0.1, 0.85)))
 
 
 func _draw_dust() -> void:
@@ -94,7 +99,7 @@ func _draw_sparks() -> void:
 		if p.y > 0.0:
 			continue
 		var f := _t / life
-		var col := Color(1.0, 0.9 - 0.5 * f, 0.4 - 0.3 * f, 1.0 - f)
+		var col := _g(Color(1.0, 0.9 - 0.5 * f, 0.4 - 0.3 * f, 1.0 - f))
 		draw_line(p, p - v.normalized() * (2.0 + s[1] * 2.0), col, s[1])
 
 

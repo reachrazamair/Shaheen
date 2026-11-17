@@ -22,6 +22,8 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 ## Distance between the two runway thresholds. Compressed so a trainer flight
 ## takes about a minute and a half (real Risalpur-Peshawar is ~45 km).
 @export var route_distance_m := 5000.0
+## Sky gradient tint at night (top dark navy, faint glow at the horizon).
+@export var night_sky_tint := Color(0.07, 0.09, 0.2)
 ## Where the aircraft starts, in metres from the departure runway threshold.
 @export var spawn_x_m := 60.0
 ## Seconds between the end of the flight and the result screen.
@@ -55,6 +57,8 @@ func _ready() -> void:
 	destination_base.position.x = route_distance_m * WorldScale.PX_PER_M
 	ground.end_m = route_distance_m + destination.runway_length_m + 3000.0
 	aircraft.place_at(spawn_x_m)
+	if GameState.night:
+		_setup_night()
 	camera.snap()
 	hud.setup(aircraft, departure, destination, route_distance_m)
 	aircraft.lifted_off.connect(_on_lifted_off)
@@ -101,7 +105,7 @@ func _on_lifted_off() -> void:
 	if state == State.DONE:
 		return
 	if state == State.ROLLOUT:
-		hud.messages.say("Bounced! Hold the nose steady and settle it down.", true)
+		hud.messages.say("You BOUNCED it! Hold the nose, settle it down! Aram se!", true)
 	_airborne_once = true
 	state = State.FLYING
 
@@ -160,8 +164,8 @@ func _finish_landing() -> void:
 		result["title"] = "WRONG BASE"
 		result["reasons"] = ["You landed back at %s. Your destination was %s." % [
 				departure.short_name.capitalize(), destination.short_name.capitalize()]]
-		hud.messages.say("That's %s, %s! Your destination was %s." % [departure.short_name.capitalize(),
-				GameState.cadet_call(), destination.short_name.capitalize()], true)
+		hud.messages.say("That's %s, %s! %s was the destination! Did you even READ the brief?!" % [departure.short_name.capitalize(),
+				GameState.pilot_call(), destination.short_name.capitalize()], true)
 	else:
 		var g := _grade_for(_worst_touchdown_fpm)
 		var reasons: Array[String] = []
@@ -172,9 +176,9 @@ func _finish_landing() -> void:
 		result["title"] = GRADES[g] + " LANDING"
 		reasons.push_front("Landed at %s." % destination.display_name)
 		result["reasons"] = reasons
-		var praise := ["Perfect landing! Well done, %s.", "Good landing, %s.",
-				"Firm, but safe. Flare a little more, %s.", "Hard landing, %s! The engineers will not be happy."]
-		hud.messages.say(praise[g] % GameState.cadet_call(), true)
+		var praise := ["Perfect. Shabash, %s. Don't let it go to your head.", "Good landing, %s. Not bad. Not bad at all.",
+				"Firm, %s. FLARE more next time! Again!", "HARD landing, %s! You want to break my aircraft?!"]
+		hud.messages.say(praise[g] % GameState.pilot_call(), true)
 	_end(result)
 
 
@@ -198,7 +202,7 @@ func _crash(reason: String, fpm := -1.0) -> void:
 	result["reasons"] = [reason]
 	if fpm >= 0.0:
 		result["touchdown_fpm"] = fpm
-	hud.messages.say("Crash! %s Press R to try again." % reason, true)
+	hud.messages.say("You CRASHED it! %s R, phir se karo!" % reason, true)
 	_end(result)
 
 
@@ -221,9 +225,21 @@ func _end(result: Dictionary) -> void:
 
 # --- Scenery ---
 
+## Night flight: the world canvas is darkened (lights use GameState.glow to
+## stay bright), dark sky with stars, aircraft lights on.
+func _setup_night() -> void:
+	var tint := CanvasModulate.new()
+	tint.color = GameState.NIGHT_TINT
+	add_child(tint)
+	var stars := preload("res://scenes/world/stars.gd").new()
+	stars.set_anchors_preset(Control.PRESET_FULL_RECT)
+	$Sky.add_child(stars)
+	aircraft.night_lights = true
+
+
 func _update_theme() -> void:
 	var t := smoothstep(0.15, 0.85, aircraft.pos_m.x / route_distance_m)
-	sky.modulate = departure.sky_tint.lerp(destination.sky_tint, t)
+	sky.modulate = night_sky_tint if GameState.night else departure.sky_tint.lerp(destination.sky_tint, t)
 	mountains.color = departure.mountain_color.lerp(destination.mountain_color, t)
 	mountains.height_scale = lerpf(departure.mountain_height, destination.mountain_height, t)
 	hills.color = departure.hill_color.lerp(destination.hill_color, t)

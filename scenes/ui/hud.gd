@@ -49,8 +49,8 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	_prev_flap = a.flap_setting
 	a.lifted_off.connect(_on_lifted_off)
 	a.touched_down.connect(_on_touched_down)
-	messages.say("Welcome to %s, %s. Today: fly to %s. Press E to start the engine." % [
-			from_base.short_name.capitalize(), GameState.cadet_call(), to_base.short_name.capitalize()])
+	messages.say("%s! Target: %s. Why are you just SITTING there? E, start the engine. Jaldi karo!" % [
+			GameState.pilot_call(), to_base.short_name.capitalize()])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -94,40 +94,40 @@ func _instructor(delta: float) -> void:
 	_stall_cooldown = maxf(0.0, _stall_cooldown - delta)
 	if a.stalled and _stall_cooldown <= 0.0:
 		_stall_cooldown = stall_callout_cooldown_s
-		messages.say("STALL! Nose down with RIGHT and add power!", true)
+		messages.say("STALL! STALL! Nose DOWN, RIGHT key, full power! Abhi!", true)
 
 	if a.fuel_kg <= 0.0 and a.engine_rpm <= 0.0:
-		_once("no_fuel", "Engine out, no fuel! Keep your speed up and glide down.", true)
+		_once("no_fuel", "You ran it DRY?! Engine's dead! Hold your speed and glide. Dhyan se!", true)
 	elif a.low_fuel:
-		_once("low_fuel", "Fuel is low. Land soon.")
+		_once("low_fuel", "Fuel is LOW! Did you even check it? Get it on the ground, FAST!")
 
 	_react_to_controls()
 
 	if not has_flown and a.on_ground:
 		if a.engine_on and a.engine_rpm >= 1.0:
 			if a.data.afterburner_thrust_n > 0.0:
-				_once("engine", "Engine up. Hold UP to full throttle: past the red mark the afterburner lights (A/B).")
+				_once("engine", "Engine's up. UP, full throttle! Past the red mark, burner! Go, go, GO!")
 			else:
-				_once("engine", "Engine running. Hold UP to open the throttle and start your takeoff roll.")
+				_once("engine", "Engine's running. What are you waiting for? UP, throttle! Chalo!")
 		if a.speed_kt >= a.data.rotate_speed_kt:
-			_once("rotate", "Rotate! Press LEFT to lift the nose.")
+			_once("rotate", "ROTATE! LEFT key, lift the nose! Now, now, NOW!")
 	elif not a.on_ground:
 		var gear_still_down := a.data.retractable_gear and a.gear_down
 		if a.flap_setting != 0 and a.altitude_ft > 500.0 and not gear_still_down and not _approaching():
-			_once("flaps_up", "Passing 500 ft: flaps UP now, press F.")
+			_once("flaps_up", "500 feet and the flaps are still out?! F, flaps UP! Wake up!")
 		if a.altitude_ft > 1000.0:
-			_once("cruise", "Good climb. %s is %.1f km ahead. Keep above %d kt or you will stall." % [
+			_once("cruise", "Finally. %s is %.1f km. Under %d kt you stall, so WATCH your speed!" % [
 					destination.short_name.capitalize(), distance_to_destination() / 1000.0, roundi(a.data.stall_speed_kt)])
 		var dist := distance_to_destination()
 		var dest := destination.short_name.capitalize()
 		if dist < 2500.0 and dist > 0.0:
-			_once("descend", "%s ahead. Start your descent and slow down." % dest)
+			_once("descend", "%s ahead! Descend, slow down. Don't you dare overshoot!" % dest)
 		if dist < 1600.0 and dist > 0.0:
 			_once("configure", _landing_checklist())
 		if dist < 900.0 and a.altitude_ft < 600.0:
-			_once("cleared", "%s tower: cleared to land. Touch down gently." % dest)
+			_once("cleared", "%s tower: cleared to land. Gently! Aram se, aram se!" % dest)
 		if dist < -destination.runway_length_m:
-			_once("overshot", "You flew past the runway. Turning back is not possible yet: press R to retry.")
+			_once("overshot", "You FLEW PAST the runway?! Unbelievable. Press R. Phir se karo!")
 
 
 func _approaching() -> bool:
@@ -143,8 +143,8 @@ func _landing_checklist() -> String:
 		todo.append("gear down (G)")
 	if a.flap_setting != 2:
 		todo.append("flaps LDG (F)")
-	todo.append("about %d kt" % approach_speed_kt())
-	return "Set up to land: %s." % ", ".join(todo)
+	todo.append("%d kt" % approach_speed_kt())
+	return "Configure NOW: %s. Kya kar rahe ho? Hurry!" % ", ".join(todo)
 
 
 ## Immediate feedback when the player moves the gear or the flaps.
@@ -159,32 +159,32 @@ func _react_to_controls() -> void:
 	if gear_changed and a.data.retractable_gear and not a.on_ground:
 		if not a.gear_down:
 			if _approaching():
-				messages.say("Gear UP? You need it down to land: press G!", true)
+				messages.say("Gear UP on approach?! Are you mad? G, gear DOWN!", true)
 			elif a.flap_setting != 0:
-				messages.say("Gear up, good. Climb on, and at 500 ft raise the flaps with F.", true)
+				messages.say("Gear up. Good. At 500 ft, flaps UP with F. Don't make me repeat it!", true)
 			else:
-				messages.say("Gear up, good. Climb to 1000 ft and head for %s." % dest, true)
+				messages.say("Gear up. Climb to 1000 ft, head for %s. MOVE!" % dest, true)
 		else:
 			if _approaching():
-				messages.say("Gear down, three green. %s" % ("Now flaps LDG with F." if a.flap_setting != 2 						else "Hold about %d kt." % approach_speed_kt()), true)
+				messages.say("Three green. %s" % ("Now flaps LDG, F! Quick!" if a.flap_setting != 2 						else "Hold %d kt. Steady!" % approach_speed_kt()), true)
 			else:
-				messages.say("Gear down? Raise it again with G for the climb.", true)
+				messages.say("Gear DOWN in the climb?! Kya kar rahe ho? G, get it UP!", true)
 
 	if flaps_changed:
 		var setting: String = Aircraft.FLAP_NAMES[a.flap_setting]
 		if a.on_ground and not has_flown:
-			messages.say("Flaps %s. %s" % [setting, "Good, TO is right for takeoff." if a.flap_setting == 1 					else "Set TO for takeoff (F)."], true)
+			messages.say("Flaps %s. %s" % [setting, "Right, TO for takeoff. Now GO!" if a.flap_setting == 1 					else "WRONG! TO for takeoff, press F! Think!"], true)
 		elif _approaching():
 			match a.flap_setting:
-				2: messages.say("Landing flaps set. %s" % ("Gear down too (G)!" if a.data.retractable_gear and not a.gear_down 						else "Hold about %d kt and aim for the runway." % approach_speed_kt()), true)
-				1: messages.say("Flaps TO. Press F once more for LDG.", true)
-				0: messages.say("Flaps UP? For landing you want them down: press F.", true)
+				2: messages.say("Landing flaps. %s" % ("GEAR! G, gear down! Come ON!" if a.data.retractable_gear and not a.gear_down 						else "%d kt, aim for the numbers. Steady!" % approach_speed_kt()), true)
+				1: messages.say("Flaps TO. Once more, F for LDG! Faster!", true)
+				0: messages.say("Flaps UP on approach?! You want to land or not? F!", true)
 		elif not a.on_ground:
 			if a.flap_setting == 0:
 				_said["flaps_up"] = true
-				messages.say("Flaps up, clean aircraft. Climb to 1000 ft and head for %s." % dest, true)
+				messages.say("Clean aircraft. 1000 ft, then %s. Don't drift!" % dest, true)
 			else:
-				messages.say("Flaps %s. Keep them UP for the cruise (F)." % setting, true)
+				messages.say("Flaps %s?! UP for the cruise, F! Pay ATTENTION!" % setting, true)
 
 
 func _on_lifted_off() -> void:
@@ -192,15 +192,15 @@ func _on_lifted_off() -> void:
 		return
 	has_flown = true
 	if aircraft.data.retractable_gear:
-		messages.say("Positive climb. Gear up! Press G.")
+		messages.say("Positive climb! GEAR UP! G! What are you waiting for?!")
 	else:
-		messages.say("Positive climb. Ease the nose up gently and build speed.")
+		messages.say("Positive climb. Easy on the nose, build speed. Shabash, keep it there!")
 
 
 func _on_touched_down(vertical_speed_ms: float) -> void:
 	_last_touchdown_fpm = vertical_speed_ms * WorldScale.M_TO_FT * 60.0
 	if has_flown and not flight_over:
-		messages.say("Touchdown at %d ft/min. Hold B to brake." % absi(roundi(_last_touchdown_fpm)), true)
+		messages.say("%d ft/min. BRAKES! Hold B! Stop it on the runway!" % absi(roundi(_last_touchdown_fpm)), true)
 
 
 func _update_debug() -> void:

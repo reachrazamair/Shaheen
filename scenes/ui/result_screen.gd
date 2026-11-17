@@ -47,7 +47,7 @@ func show_result(result: Dictionary) -> void:
 	_panel.add_child(box)
 
 	var grade: String = result.get("grade", "CRASH")
-	box.add_child(_label(GameState.cadet_title(), 8, Color(0.75, 0.78, 0.72)))
+	box.add_child(_label(GameState.pilot_title(), 8, Color(0.75, 0.78, 0.72)))
 	box.add_child(_label(result.get("title", grade), 16, GRADE_COLORS.get(grade, Color.WHITE)))
 	for r in result.get("reasons", []):
 		box.add_child(_label(r, 8, Color(0.9, 0.9, 0.85)))

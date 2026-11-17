@@ -1,5 +1,6 @@
 extends Control
-## Start screen: title, name entry ("Avn Cdt <name>"), aircraft choice and FLY.
+## Start screen: title, name entry (rank comes from the aircraft: "AVN CDT" in the
+## Super Mushshak, "SQN LDR" in the F-16), aircraft choice, DAY/NIGHT and FLY.
 ## The first click/keypress here also unlocks browser audio on the web build.
 
 const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
@@ -13,6 +14,9 @@ const AIRCRAFT_BLURB := [
 var _name_edit: LineEdit
 var _fly: Button
 var _preview: TextureRect
+var _rank_label: Label
+## Text colour of the selected DAY/NIGHT button.
+const SELECTED_COLOR := Color(1.0, 0.82, 0.35)
 
 
 func _ready() -> void:
@@ -55,7 +59,7 @@ func _build() -> void:
 	add_child(_preview)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 7)
 	box.position = Vector2(100, 14)
 	box.size = Vector2(440, 270)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -64,13 +68,13 @@ func _build() -> void:
 	box.add_child(_label("PROJECT SHAHEEN", 32, Color(0.08, 0.2, 0.14)))
 	box.add_child(_label("PAF ACADEMY ASGHAR KHAN, RISALPUR", 8, Color(0.1, 0.2, 0.25)))
 	box.add_child(_spacer(4))
-	box.add_child(_label("ENTER YOUR NAME, CADET", 16, Color(0.08, 0.15, 0.2)))
+	box.add_child(_label("ENTER YOUR NAME", 16, Color(0.08, 0.15, 0.2)))
 
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 6)
-	var rank := _label(GameState.RANK, 16, Color(0.08, 0.15, 0.2))
-	row.add_child(rank)
+	_rank_label = _label(GameState.aircraft_data().pilot_rank, 16, Color(0.08, 0.15, 0.2))
+	row.add_child(_rank_label)
 	_name_edit = LineEdit.new()
 	_name_edit.max_length = GameState.MAX_NAME_LENGTH
 	_name_edit.placeholder_text = "YOUR NAME"
@@ -91,13 +95,34 @@ func _build() -> void:
 		cards.add_child(_aircraft_card(i, group))
 	box.add_child(cards)
 
+	# Time of day + FLY on one row.
+	var go_row := HBoxContainer.new()
+	go_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	go_row.add_theme_constant_override("separation", 4)
+	var time_group := ButtonGroup.new()
+	for night in [false, true]:
+		var b := Button.new()
+		b.text = "NIGHT" if night else "DAY"
+		b.toggle_mode = true
+		b.button_group = time_group
+		b.custom_minimum_size = Vector2(56, 26)
+		b.add_theme_font_size_override("font_size", 8)
+		b.add_theme_color_override("font_pressed_color", SELECTED_COLOR)
+		b.add_theme_color_override("font_hover_pressed_color", SELECTED_COLOR)
+		b.button_pressed = GameState.night == night
+		b.toggled.connect(func(on: bool) -> void:
+			if on:
+				GameState.night = night)
+		go_row.add_child(b)
+	go_row.add_child(_spacer(0))
+	go_row.get_child(-1).custom_minimum_size = Vector2(14, 0)
 	_fly = Button.new()
 	_fly.text = "FLY"
 	_fly.custom_minimum_size = Vector2(120, 26)
 	_fly.add_theme_font_size_override("font_size", 16)
-	_fly.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_fly.pressed.connect(_start)
-	box.add_child(_fly)
+	go_row.add_child(_fly)
+	box.add_child(go_row)
 
 	box.add_child(_label("ROUTE: RISALPUR TO PESHAWAR", 8, Color(0.1, 0.2, 0.25)))
 
@@ -150,7 +175,10 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 
 func _select(path: String) -> void:
 	GameState.aircraft_path = path
-	_preview.texture = (load(path) as AircraftData).sprite
+	var data: AircraftData = load(path)
+	_preview.texture = data.sprite
+	if _rank_label:
+		_rank_label.text = data.pilot_rank
 
 
 func _label(text: String, font_size: int, color: Color) -> Label:

@@ -147,6 +147,21 @@ extends Resource
 @export var g_effect_onset := 0.8
 @export var g_effect_recovery := 1.2
 
+@export_group("Pilot")
+## Rank shown with the player's name (badge, result screen) and in radio calls.
+@export var pilot_rank := "AVN CDT"
+@export var pilot_rank_call := "Avn Cdt"
+
+@export_group("Lights (night)")
+## Texture px. Nav light on the near wingtip (green, starboard side faces the
+## viewer) and the far one (red, partly visible), white tail light, flashing
+## anti-collision beacon, and the landing light on the nose gear (gear down only).
+@export var light_nav_near := Vector2.ZERO
+@export var light_nav_far := Vector2.ZERO
+@export var light_tail := Vector2.ZERO
+@export var light_beacon := Vector2.ZERO
+@export var light_landing := Vector2.ZERO
+
 @export_group("Cockpit")
 ## Instrument panel look: Analog = grey panel with round dials (trainers),
 ## Glass = dark jet cockpit with green digital screens (fighters).

@@ -68,6 +68,8 @@ var _stall_timer := 0.0
 var _prop_angle := 0.0
 ## Elevator/tailplane deflection, -1 (nose-down) .. 1 (nose-up), follows the stick.
 var elevator := 0.0
+## Night flight: draw nav/strobe/landing lights (set by the flight scene).
+var night_lights := false
 ## G felt by the pilot (along the seat axis, 1 = level flight), smoothed.
 var g_load := 1.0
 ## 0..1 screen effects driven by g_load (see AircraftData "Pilot G effects").
@@ -631,7 +633,43 @@ func _draw_sprite_aircraft() -> void:
 		else:
 			var span := data.sprite_prop_radius * absf(cos(_prop_angle))
 			draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
+
+	if night_lights:
+		_draw_lights()
 	draw_set_transform(Vector2.ZERO)
+
+
+## Night lighting (texture px, in the sprite transform): nav lights (green
+## near wingtip, red far wingtip), white tail light, flashing anti-collision
+## strobe, and the landing light on the nose gear with its beam (gear down only).
+func _draw_lights() -> void:
+	var gear_offset := Vector2(0, -(1.0 - gear_pos) * _gear_travel())
+	if data.light_landing != Vector2.ZERO and gear_pos > 0.9:
+		var l := data.light_landing + gear_offset
+		var beam := PackedVector2Array([l, l + Vector2(420, -30), l + Vector2(420, 80)])
+		var bright := GameState.glow(Color(1.0, 0.97, 0.85, 0.32))
+		var fade := GameState.glow(Color(1.0, 0.97, 0.85, 0.0))
+		draw_polygon(beam, PackedColorArray([bright, fade, fade]))
+		_light(l, Color(1.0, 0.98, 0.9), 5.0)
+	if data.light_nav_far != Vector2.ZERO:
+		_light(data.light_nav_far, Color(1.0, 0.12, 0.1), 3.0)
+	if data.light_nav_near != Vector2.ZERO:
+		_light(data.light_nav_near, Color(0.15, 1.0, 0.3), 4.0)
+	if data.light_tail != Vector2.ZERO:
+		_light(data.light_tail, Color(1, 1, 1), 3.0)
+	if data.light_beacon != Vector2.ZERO:
+		# Double white flash every 1.2 s, otherwise a dim red glow.
+		var t := fmod(_time, 1.2)
+		if t < 0.06 or (t > 0.16 and t < 0.22):
+			_light(data.light_beacon, Color(1, 1, 1), 7.0)
+		else:
+			_light(data.light_beacon, Color(1.0, 0.15, 0.1, 0.7), 2.5)
+
+
+func _light(p: Vector2, col: Color, r: float) -> void:
+	draw_circle(p, r * 4.0, GameState.glow(Color(col, col.a * 0.12)))
+	draw_circle(p, r * 2.0, GameState.glow(Color(col, col.a * 0.3)))
+	draw_circle(p, r, GameState.glow(col))
 
 
 ## Texture x of the node origin: the main wheels (so the aircraft rotates

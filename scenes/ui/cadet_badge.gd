@@ -1,11 +1,12 @@
 extends PanelContainer
-## Bottom-left name plate: PAF pilot wings badge over "AVN CDT" (gold, like
-## the wreath) and the player's name (white), on a dark plate with a thin
-## gold border. Call show_cadet() once the name is known.
+## Compact name plate under the instructor box (top-left): PAF pilot wings
+## badge, a thin gold divider, then the rank (gold, like the wreath: "AVN CDT"
+## in the trainer, "SQN LDR" in the F-16) over the player's name (white), on a
+## dark plate with a thin gold border. Call show_cadet() once the name is known.
 
 @export var badge_texture: Texture2D = preload("res://assets/sprites/paf_pilot_wings.png")
 ## On-screen badge width (layout px); height follows the picture.
-@export var badge_width := 72.0
+@export var badge_width := 52.0
 @export var plate_color := Color(0.06, 0.08, 0.1, 0.78)
 @export var border_color := Color(0.72, 0.55, 0.28)
 @export var rank_color := Color(0.85, 0.66, 0.34)
@@ -22,17 +23,16 @@ func _ready() -> void:
 	style.border_color = border_color
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(3)
-	style.content_margin_left = 6
+	style.content_margin_left = 4
 	style.content_margin_right = 6
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
 	add_theme_stylebox_override("panel", style)
 
-	var box := VBoxContainer.new()
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 1)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(row)
 
 	var badge := TextureRect.new()
 	badge.texture = badge_texture
@@ -42,31 +42,36 @@ func _ready() -> void:
 	var ratio := badge_texture.get_height() / float(badge_texture.get_width())
 	badge.custom_minimum_size = Vector2(badge_width, roundf(badge_width * ratio))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(badge)
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(badge)
 
-	# Thin gold rule between the badge and the text.
+	# Thin gold divider between the badge and the text.
 	var rule := ColorRect.new()
 	rule.color = Color(border_color, 0.6)
-	rule.custom_minimum_size = Vector2(badge_width * 0.6, 1)
-	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rule.custom_minimum_size = Vector2(1, 0)
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(rule)
+	row.add_child(rule)
 
+	var text := VBoxContainer.new()
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.add_theme_constant_override("separation", 0)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
 	_rank = _label(rank_color)
 	_name = _label(name_color)
-	box.add_child(_rank)
-	box.add_child(_name)
+	text.add_child(_rank)
+	text.add_child(_name)
 
 
 func show_cadet() -> void:
-	_rank.text = GameState.RANK
+	_rank.text = GameState.aircraft_data().pilot_rank
 	var n := GameState.pilot_name.strip_edges().to_upper()
 	_name.text = n if n != "" else "CADET"
 
 
 func _label(col: Color) -> Label:
 	var l := Label.new()
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	l.add_theme_font_size_override("font_size", 8)
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.04))

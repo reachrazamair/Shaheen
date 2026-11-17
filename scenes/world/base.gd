@@ -51,6 +51,17 @@ func _process(delta: float) -> void:
 	queue_redraw()   # windsock flutter
 
 
+## Night: lit windows and lights glow (GameState.glow beats the night tint).
+func _night() -> bool:
+	var gs := get_node_or_null("/root/GameState")
+	return gs != null and gs.night
+
+
+func _lamp(c: Color) -> Color:
+	var gs := get_node_or_null("/root/GameState")
+	return gs.glow(c) if gs != null else c
+
+
 func m(x: float) -> float:
 	return x * WorldScale.PX_PER_M
 
@@ -93,8 +104,9 @@ func _draw_admin(x: float) -> void:
 		var wy := -h + s(2.0) + f * floor_h + 3
 		var wx := x + 5.0
 		while wx < x + w - 8:
-			var lit := rng.randf() < 0.15
-			draw_rect(Rect2(wx, wy, 5, 8), window_lit_color if lit else window_color)
+			var lit := rng.randf() < (0.4 if _night() else 0.15)
+			var lit_col := _lamp(window_lit_color * Color(0.9, 0.85, 0.7)) if _night() else window_lit_color
+			draw_rect(Rect2(wx, wy, 5, 8), lit_col if lit else window_color)
 			wx += 9.0
 	# Entrance.
 	draw_rect(Rect2(x + w * 0.5 - 8, -14, 16, 14), window_color)
@@ -111,12 +123,17 @@ func _draw_tower(x: float) -> void:
 	# Cab: wider glass room on top, dark roof, antenna.
 	var cab_y := -h - s(5.0)
 	_box(Rect2(x - cab_w * 0.5, cab_y, cab_w, s(5.0)), data.building_color)
-	draw_rect(Rect2(x - cab_w * 0.5 + 2, cab_y + 4, cab_w - 4, s(5.0) - 9), glass_color)
+	var cab_glass := _lamp(Color(0.75, 0.9, 0.85)) if _night() else glass_color
+	draw_rect(Rect2(x - cab_w * 0.5 + 2, cab_y + 4, cab_w - 4, s(5.0) - 9), cab_glass)
 	for gx in range(int(x - cab_w * 0.5 + 8), int(x + cab_w * 0.5 - 2), 8):
 		draw_rect(Rect2(gx, cab_y + 4, 1, s(5.0) - 9), outline_color)
 	draw_rect(Rect2(x - cab_w * 0.5 - 3, cab_y - 3, cab_w + 6, 4), data.roof_color)
 	draw_rect(Rect2(x - 1, cab_y - 18, 2, 15), outline_color)
 	draw_rect(Rect2(x - 1, cab_y - 20, 2, 2), Color(1, 0.2, 0.2))
+	if _night() and fmod(_time, 1.5) < 0.9:
+		var bp := Vector2(x, cab_y - 19)
+		draw_circle(bp, 6, _lamp(Color(1, 0.15, 0.1, 0.15)))
+		draw_circle(bp, 2.5, _lamp(Color(1, 0.2, 0.15)))
 
 
 func _draw_hangar(x: float, number: int) -> void:

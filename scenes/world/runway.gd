@@ -2,7 +2,8 @@
 extends Node2D
 ## Side view of a runway: an asphalt strip at ground level with centreline
 ## dashes, threshold blocks and edge-light posts. Node origin = runway start.
-## (Will be driven by BaseData in chunk 1.6.)
+## At night (GameState.night) the lights glow: white/yellow edge lights, green
+## threshold, red runway end, and sequenced flashing approach lights.
 
 @export var length_m := 1800.0:
 	set(v): length_m = v; queue_redraw()
@@ -18,6 +19,26 @@ extends Node2D
 @export var approach_lights_m := 150.0
 @export var approach_light_spacing_m := 25.0
 @export var approach_light_color := Color(1.0, 0.3, 0.25)
+@export_group("Night")
+@export var edge_glow_color := Color(1.0, 0.92, 0.65)
+@export var threshold_color := Color(0.2, 1.0, 0.35)
+@export var end_color := Color(1.0, 0.15, 0.1)
+@export var approach_glow_color := Color(1.0, 0.95, 0.85)
+## One sweep of the flashing approach lights toward the runway (s).
+@export var rabbit_period_s := 1.0
+
+var _time := 0.0
+
+
+func _night() -> bool:
+	var gs := get_node_or_null("/root/GameState")
+	return gs != null and gs.night
+
+
+func _process(delta: float) -> void:
+	if _night():
+		_time += delta
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -47,3 +68,40 @@ func _draw() -> void:
 		draw_rect(Rect2(x * px, -3, 1, 3), light_post_color)
 		draw_rect(Rect2(x * px, -4, 1, 1), light_color)
 		x += light_spacing_m
+
+	if _night():
+		_draw_night_lights()
+
+
+func _draw_night_lights() -> void:
+	var px := WorldScale.PX_PER_M
+	var gs := get_node("/root/GameState")
+	# Edge lights.
+	var x := 0.0
+	while x <= length_m:
+		_glow(Vector2(x * px + 0.5, -3.5), edge_glow_color, 1.0, gs)
+		x += light_spacing_m
+	# Threshold (green) and runway end (red) bars.
+	for k in 5:
+		_glow(Vector2(k * 2.0, -1.0), threshold_color, 0.9, gs)
+		_glow(Vector2(length_m * px - k * 2.0, -1.0), end_color, 0.9, gs)
+	# Approach lights: steady red, plus a bright flash running toward the runway.
+	var poles: Array = []
+	var ax := -approach_lights_m
+	while ax < -1.0:
+		poles.append(ax)
+		ax += approach_light_spacing_m
+	var lit := int(fmod(_time / rabbit_period_s, 1.0) * poles.size())
+	for i in poles.size():
+		var a: float = poles[i]
+		var hgt := roundi(3 + 6 * (-a / approach_lights_m))
+		var p := Vector2(a * px, -hgt - 1)
+		_glow(p, approach_light_color, 0.9, gs)
+		if i == lit:
+			_glow(p, approach_glow_color, 2.2, gs)
+
+
+func _glow(p: Vector2, col: Color, r: float, gs: Node) -> void:
+	draw_circle(p, r * 4.0, gs.glow(Color(col, 0.12)))
+	draw_circle(p, r * 2.0, gs.glow(Color(col, 0.3)))
+	draw_circle(p, r, gs.glow(col))

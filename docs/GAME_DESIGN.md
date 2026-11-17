@@ -4,7 +4,11 @@ This is the full long-term vision. Most of it is **not** built in the prototype.
 
 ## 1. Core idea
 
-You are a PAF pilot, starting as an Aviation Cadet: the player enters their name and is addressed as "Avn Cdt <name>" (rank could rise with the career later). Each mission: you're on the runway at one PAF base, you start up, take off, fly to another named PAF base, and land. Landing well (gentle touchdown, gear down, on the runway, not wasting fuel) earns pay and reputation. Pay unlocks better aircraft. You progress from basic trainers to front-line fighters.
+You are a PAF pilot, starting as an Aviation Cadet: the player enters their name and is addressed as "Avn Cdt <name>" (rank could rise with the career later). **Rank follows the aircraft (owner decision):** flying the Super Mushshak you are **Aviation Cadet (AVN CDT)**; flying the F-16 you are **Squadron Leader (SQN LDR)**. Set per aircraft in `AircraftData.pilot_rank` / `pilot_rank_call`. In career mode this should become rank progression.
+
+**Instructor tone (owner decision):** the instructor is a real, hard flight instructor: aggressive, angry, hyper, impatient, short shouted lines, with natural Urdu where an instructor would use it ("Jaldi karo!", "Kya kar rahe ho?", "Abhi!", "Aram se", "Dhyan se", "Shabash", "Phir se karo"). Nothing corny, no jokes, no profanity.
+
+**Day or night** is chosen on the start screen. Night: dark world, stars, runway edge/threshold/end lights and sequenced approach lights, lit tower and windows, aircraft nav lights (green near wingtip, red far wingtip), white tail light, anti-collision strobe and a landing light on the nose gear (off when the gear is up). Each mission: you're on the runway at one PAF base, you start up, take off, fly to another named PAF base, and land. Landing well (gentle touchdown, gear down, on the runway, not wasting fuel) earns pay and reputation. Pay unlocks better aircraft. You progress from basic trainers to front-line fighters.
 
 The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
 - **Better controls**: responsive, readable, with clear instrument feedback. No fighting the interface.

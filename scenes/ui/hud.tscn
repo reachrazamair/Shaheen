@@ -62,13 +62,9 @@ theme_override_font_sizes/font_size = 8
 text = "debug"
 
 [node name="CadetBadge" type="PanelContainer" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 6.0
-offset_top = -6.0
-offset_right = 6.0
-offset_bottom = -6.0
-grow_vertical = 0
+offset_left = 4.0
+offset_top = 70.0
+offset_right = 4.0
+offset_bottom = 70.0
 mouse_filter = 2
 script = ExtResource("5_badge")
