@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## End-of-flight result: grade, why, touchdown rate, flight time, fuel used.
-## Buttons: RETRY (same flight) and MENU (start screen; aircraft select in 1.8).
+## Buttons: RETRY (same flight) and CHANGE AIRCRAFT (start screen).
 
 signal retry_pressed
 signal menu_pressed
@@ -71,7 +71,7 @@ func show_result(result: Dictionary) -> void:
 	row.add_theme_constant_override("separation", 12)
 	var retry := _button("RETRY (R)")
 	retry.pressed.connect(func() -> void: retry_pressed.emit())
-	var menu := _button("MENU")
+	var menu := _button("CHANGE AIRCRAFT")
 	menu.pressed.connect(func() -> void: menu_pressed.emit())
 	row.add_child(retry)
 	row.add_child(menu)

@@ -1,12 +1,18 @@
 extends Control
-## Start screen: title, name entry ("Avn Cdt <name>") and FLY.
-## Aircraft selection is added here in chunk 1.8.
+## Start screen: title, name entry ("Avn Cdt <name>"), aircraft choice and FLY.
 ## The first click/keypress here also unlocks browser audio on the web build.
 
 const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
 
+## Card text per aircraft (same order as GameState.AIRCRAFT).
+const AIRCRAFT_BLURB := [
+	"TRAINER. SLOW AND FORGIVING.",
+	"FIGHTER. FAST, AFTERBURNER, HARD.",
+]
+
 var _name_edit: LineEdit
 var _fly: Button
+var _preview: TextureRect
 
 
 func _ready() -> void:
@@ -40,25 +46,24 @@ func _build() -> void:
 	runway.position = Vector2(0, 318)
 	runway.size = Vector2(640, 4)
 	add_child(runway)
-	var plane := TextureRect.new()
-	plane.texture = load("res://assets/sprites/super_mushshak_body.png")
-	plane.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plane.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	plane.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	plane.position = Vector2(440, 292)
-	plane.size = Vector2(140, 26)
-	add_child(plane)
+	_preview = TextureRect.new()
+	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_preview.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_preview.position = Vector2(470, 268)
+	_preview.size = Vector2(150, 50)
+	add_child(_preview)
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
-	box.position = Vector2(120, 40)
-	box.size = Vector2(400, 240)
+	box.position = Vector2(100, 14)
+	box.size = Vector2(440, 270)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(box)
 
 	box.add_child(_label("PROJECT SHAHEEN", 32, Color(0.08, 0.2, 0.14)))
 	box.add_child(_label("PAF ACADEMY ASGHAR KHAN, RISALPUR", 8, Color(0.1, 0.2, 0.25)))
-	box.add_child(_spacer(10))
+	box.add_child(_spacer(4))
 	box.add_child(_label("ENTER YOUR NAME, CADET", 16, Color(0.08, 0.15, 0.2)))
 
 	var row := HBoxContainer.new()
@@ -76,6 +81,16 @@ func _build() -> void:
 	row.add_child(_name_edit)
 	box.add_child(row)
 
+	box.add_child(_spacer(2))
+	box.add_child(_label("CHOOSE YOUR AIRCRAFT", 8, Color(0.08, 0.15, 0.2)))
+	var cards := HBoxContainer.new()
+	cards.alignment = BoxContainer.ALIGNMENT_CENTER
+	cards.add_theme_constant_override("separation", 10)
+	var group := ButtonGroup.new()
+	for i in GameState.AIRCRAFT.size():
+		cards.add_child(_aircraft_card(i, group))
+	box.add_child(cards)
+
 	_fly = Button.new()
 	_fly.text = "FLY"
 	_fly.custom_minimum_size = Vector2(120, 26)
@@ -84,14 +99,58 @@ func _build() -> void:
 	_fly.pressed.connect(_start)
 	box.add_child(_fly)
 
-	box.add_child(_spacer(6))
-	box.add_child(_label("TODAY: SUPER MUSHSHAK, RISALPUR TO PESHAWAR", 8, Color(0.1, 0.2, 0.25)))
+	box.add_child(_label("ROUTE: RISALPUR TO PESHAWAR", 8, Color(0.1, 0.2, 0.25)))
 
 	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   R RESTART", 8, Color.WHITE)
 	add_child(keys)
 	keys.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	keys.offset_top = -24
 	keys.offset_bottom = -10
+
+
+## A selectable card: aircraft picture, name and a one-line description.
+func _aircraft_card(index: int, group: ButtonGroup) -> Button:
+	var path: String = GameState.AIRCRAFT[index]
+	var data: AircraftData = load(path)
+	var card := Button.new()
+	card.toggle_mode = true
+	card.button_group = group
+	card.custom_minimum_size = Vector2(200, 70)
+	card.button_pressed = path == GameState.aircraft_path
+	card.toggled.connect(func(on: bool) -> void:
+		if on:
+			_select(path))
+	var inner := VBoxContainer.new()
+	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inner.offset_left = 4
+	inner.offset_right = -4
+	inner.offset_top = 3
+	inner.offset_bottom = -3
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_theme_constant_override("separation", 1)
+	var pic := TextureRect.new()
+	pic.texture = data.sprite
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pic.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	pic.custom_minimum_size = Vector2(0, 34)
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(pic)
+	var name_label := _label(data.display_name.to_upper(), 8, Color.WHITE)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(name_label)
+	var blurb := _label(AIRCRAFT_BLURB[index] if index < AIRCRAFT_BLURB.size() else "", 8, Color(0.8, 0.85, 0.8))
+	blurb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(blurb)
+	card.add_child(inner)
+	if card.button_pressed:
+		_select(path)
+	return card
+
+
+func _select(path: String) -> void:
+	GameState.aircraft_path = path
+	_preview.texture = (load(path) as AircraftData).sprite
 
 
 func _label(text: String, font_size: int, color: Color) -> Label:

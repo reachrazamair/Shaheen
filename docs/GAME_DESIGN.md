@@ -99,7 +99,7 @@ Distances between bases are compressed so flights take a few minutes, not real-w
 
 | Action | Keys |
 |---|---|
-| Throttle up / down (hold) | ↑ / ↓ |
+| Throttle up / down (hold); past the red mark = afterburner on jets | ↑ / ↓ |
 | Pitch nose up / down | ← / → |
 | Engine start / stop | E |
 | Flaps: step one notch (flights start in TO; order TO → UP → TO → LDG → TO …) | F |

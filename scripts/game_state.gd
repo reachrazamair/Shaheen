@@ -5,7 +5,15 @@ extends Node
 const RANK := "AVN CDT"   # Aviation Cadet
 const MAX_NAME_LENGTH := 16
 
+## Aircraft the player can choose on the start screen (in unlock order).
+const AIRCRAFT := [
+	"res://data/aircraft/super_mushshak.tres",
+	"res://data/aircraft/f16.tres",
+]
+
 var pilot_name := ""
+## Path of the chosen AircraftData.
+var aircraft_path: String = AIRCRAFT[0]
 
 
 ## "AVN CDT ALI" style call sign for the HUD and messages.

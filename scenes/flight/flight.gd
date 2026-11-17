@@ -48,6 +48,8 @@ var _overran := false
 
 
 func _ready() -> void:
+	if GameState.aircraft_path != "":
+		aircraft.set_data(load(GameState.aircraft_path))
 	departure_base.data = departure
 	destination_base.data = destination
 	destination_base.position.x = route_distance_m * WorldScale.PX_PER_M
@@ -175,7 +177,12 @@ func _finish_landing() -> void:
 func _crash(reason: String, fpm := -1.0) -> void:
 	if state == State.DONE:
 		return
-	aircraft.crash()
+	# Severity (0..1) from sink rate and ground speed: >= 0.5 breaks the
+	# fuselage into 3 pieces, below that into 2.
+	var d := aircraft.data
+	var sink := maxf(fpm, 0.0)
+	var severity := clampf(sink / (2.0 * d.hard_touchdown_fpm) + aircraft.speed_kt / (4.0 * d.stall_speed_kt), 0.0, 1.0)
+	aircraft.crash(severity)
 	var fx := Node2D.new()
 	fx.set_script(CrashEffect)
 	fx.position = aircraft.position

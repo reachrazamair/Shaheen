@@ -141,6 +141,10 @@ func _draw_throttle(p: Vector2) -> void:
 	var h := 58.0
 	draw_rect(Rect2(p.x, p.y, 8, h), plate_dark)
 	draw_rect(Rect2(p.x + 3, p.y + 2, 2, h - 4), Color.BLACK)
+	if aircraft.data.afterburner_thrust_n > 0.0:
+		# Afterburner detent: everything above this mark lights the afterburner.
+		var dy := p.y + (h - 6) * (1.0 - aircraft.data.afterburner_threshold) + 3
+		draw_rect(Rect2(p.x - 4, dy, 16, 1), lamp_red)
 	var hy := p.y + (h - 6) * (1.0 - aircraft.throttle)
 	draw_rect(Rect2(p.x - 3, hy, 14, 6), Color(0.12, 0.12, 0.12))
 	draw_rect(Rect2(p.x - 2, hy + 1, 12, 1), Color(0.4, 0.4, 0.4))
@@ -204,6 +208,8 @@ func _draw_warnings(p: Vector2) -> void:
 		[fuel_text, a.low_fuel, lamp_amber],
 		["BRAKE", a.braking, lamp_amber],
 	]
+	if a.data.afterburner_thrust_n > 0.0:
+		items.append(["A/B", a.afterburner > 0.0, Color(1.0, 0.55, 0.15)])
 	var w := (size.x - 12.0 - 3.0 * (items.size() - 1)) / items.size()
 	for i in items.size():
 		var r := Rect2(p.x + i * (w + 3.0), p.y, w, 14)

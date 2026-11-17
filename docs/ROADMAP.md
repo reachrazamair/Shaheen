@@ -15,14 +15,16 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.7 Landing detection, grading, result screen
   - Grades PERFECT/GOOD/FIRM/HARD from touchdown sink rate (limits in AircraftData), CRASH for: off-runway touchdown, gear up, nose-first, too hard, running off a runway end; WRONG BASE for landing back at Risalpur; overrun at low speed = one grade lower. Crash effect (fireball, debris, smoke). Result screen with Retry / Menu.
   - Also: route shortened to **5 km** (owner: 9 km felt too long); start screen with **name entry**, shown as **"AVN CDT <NAME>"** (Aviation Cadet) bottom-left in flight, on the result screen and in the instructor's calls.
-- [ ] 1.8 Second aircraft (F-16) and aircraft-select screen
+- [x] 1.8 Second aircraft (F-16) and aircraft-select screen
+  - F-16 built from the owner's art (`docs/reference/f16_sprite_source.png`), gear drawn in code (art shows it retracted). Afterburner above 85% throttle (flame, A/B light, 3x fuel). Harder than the Mushshak: stall 125 kt, rotate 145 kt, approach ~145 kt, 4 s engine spool, twitchier pitch, weaker brakes, stricter landing limits.
+  - Also: stalls no longer drop the nose (owner: "fall in the same position"); crashes break the fuselage into 2 or 3 tumbling pieces depending on impact severity.
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
 
 ### Open questions (owner to decide after playtesting)
 - **Camera:** keep the moving look-ahead camera? Should it zoom out as speed increases?
 - **Throttle:** keep "hold ↑/↓ to move the lever" (lever stays where you leave it), or switch to a different scheme (e.g. fixed steps)?
 - Throttle response was sped up in 1.3 and again in 1.4 (thrust and drag both ×1.75: same top speed, much punchier speed changes; brakes 0.4 g → 0.6 g), then before 1.5 via `speed_response` = 2 (speed changes 2× faster again, same top speed/climb) and brakes 0.9 g. Re-check feel.
-- **Stall auto-recovery toggle:** right now a stall forces the nose down by itself (`stall_nose_drop_deg_s`). The owner wants an **option to turn auto-recovery on/off**. With it off, the nose should not drop on its own; the plane stays stalled (sinking, losing lift) until the player pushes the nose down. Probably a game setting (options menu, Phase 2) rather than per-aircraft data.
+- **Stall behaviour (decided):** owner chose NO auto nose-drop: the aircraft keeps its attitude and falls until the player pushes the nose down (`stall_nose_drop_deg_s` = 0 for both aircraft). An options toggle for auto-recovery could still come in Phase 2.
 - **Gear on the Super Mushshak:** the real aircraft has fixed gear; the owner asked for working gear up/down, so `retractable_gear = true` in `super_mushshak.tres` (one flag to flip back).
 
 **Everything below Phase 1 is on hold.** Don't start any of it until the owner says so. It's listed only so the prototype code stays easy to extend.

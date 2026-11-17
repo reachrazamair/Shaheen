@@ -98,7 +98,10 @@ func _instructor(delta: float) -> void:
 
 	if not has_flown and a.on_ground:
 		if a.engine_on and a.engine_rpm >= 1.0:
-			_once("engine", "Engine running. Hold UP to open the throttle and start your takeoff roll.")
+			if a.data.afterburner_thrust_n > 0.0:
+				_once("engine", "Engine up. Hold UP to full throttle: past the red mark the afterburner lights (A/B).")
+			else:
+				_once("engine", "Engine running. Hold UP to open the throttle and start your takeoff roll.")
 		if a.speed_kt >= a.data.rotate_speed_kt:
 			_once("rotate", "Rotate! Press LEFT to lift the nose.")
 	elif not a.on_ground:

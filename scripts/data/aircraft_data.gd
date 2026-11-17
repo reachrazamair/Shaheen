@@ -21,6 +21,17 @@ extends Resource
 @export var speed_response := 1.4
 ## Time for the engine to spool up after E (and to wind down when shut off).
 @export var engine_spool_time_s := 1.5
+## Propeller aircraft draw a spinning/still propeller; jets don't.
+@export var has_propeller := true
+
+@export_group("Afterburner")
+## Extra thrust at full afterburner (0 = no afterburner). Military (dry) thrust
+## is max_thrust_n, reached at afterburner_threshold; throttle above that
+## lights the afterburner.
+@export var afterburner_thrust_n := 0.0
+@export var afterburner_threshold := 0.85
+## Fuel burn multiplier at full afterburner.
+@export var afterburner_burn_multiplier := 3.0
 
 @export_group("Fuel")
 ## Fuel quantity is compressed for gameplay (a flight lasts minutes, not hours).
@@ -51,9 +62,10 @@ extends Resource
 @export var zero_aoa_lift := 0.25
 ## Fraction of max lift left once fully stalled.
 @export var post_stall_lift := 0.45
-## How fast the nose drops on its own while stalled.
-## (TODO: owner wants an option to turn this auto nose-drop on/off; see ROADMAP.)
-@export var stall_nose_drop_deg_s := 25.0
+## How fast the nose drops on its own while stalled. Owner's choice: 0, i.e. the
+## aircraft keeps its attitude and falls; the player must push the nose down
+## (RIGHT) to recover. (Pulling up is blocked while stalled.)
+@export var stall_nose_drop_deg_s := 0.0
 ## Once stalled, the stall lasts at least this long, so the nose drop is decisive
 ## and the warning doesn't flicker while the player is still pulling back.
 @export var min_stall_time_s := 0.8
@@ -142,7 +154,15 @@ extends Resource
 @export var sprite_gear_travel := 26.0
 @export var sprite_prop_center := Vector2(272, 57)
 @export var sprite_prop_radius := 34.0
-## Wing trailing edge, where the flap hangs from.
+## Code-drawn gear, used when sprite_gear is empty (art shows the gear retracted).
+## One entry per leg (main first): x, y where it leaves the fuselage, wheel diameter.
+@export var sprite_gear_x := PackedFloat32Array()
+@export var sprite_gear_top_y := PackedFloat32Array()
+@export var sprite_gear_wheel_size := PackedFloat32Array()
+## Engine nozzle (afterburner flame starts here, pointing back) and flame length.
+@export var sprite_nozzle := Vector2.ZERO
+@export var afterburner_flame_length := 60.0
+## Wing trailing edge, where the flap hangs from (flap length 0 = don't draw).
 @export var sprite_flap_hinge := Vector2(130, 40)
 @export var sprite_flap_length := 18.0
 @export var body_color := Color(0.95, 0.95, 0.95)

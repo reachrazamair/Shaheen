@@ -63,6 +63,9 @@ var touchdown_pitch := 0.0
 
 var _stall_timer := 0.0
 var _prop_angle := 0.0
+var _time := 0.0
+## Wreckage pieces after a crash: {src (texture Rect2), pos, vel, rot, spin, resting}
+var _fragments: Array = []
 
 var speed_kt: float:
 	get: return velocity_m.length() * WorldScale.MS_TO_KT
@@ -78,10 +81,23 @@ var gear_in_transit: bool:
 	get: return gear_pos > 0.0 and gear_pos < 1.0
 var airbrake_out: bool:
 	get: return braking and not on_ground
+## 0..1: how far into the afterburner range the throttle is (0 if none / engine not up).
+var afterburner: float:
+	get:
+		if data.afterburner_thrust_n <= 0.0 or engine_rpm < 0.95:
+			return 0.0
+		return clampf((throttle - data.afterburner_threshold) / (1.0 - data.afterburner_threshold), 0.0, 1.0)
 
 
 func _ready() -> void:
 	assert(data != null, "Aircraft needs an AircraftData resource")
+	reset_state()
+	queue_redraw()
+
+
+## Swap in another aircraft's data (aircraft select) and reset.
+func set_data(d: AircraftData) -> void:
+	data = d
 	reset_state()
 	queue_redraw()
 
@@ -93,6 +109,9 @@ func place_at(x_m: float) -> void:
 
 
 func reset_state() -> void:
+	crashed = false
+	controls_enabled = true
+	_fragments.clear()
 	pos_m = Vector2.ZERO
 	velocity_m = Vector2.ZERO
 	pitch = 0.0
@@ -127,7 +146,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_time += delta
 	if crashed:
+		_update_fragments(delta)
+		queue_redraw()
 		return
 	_stall_timer = maxf(0.0, _stall_timer - delta)
 	_prop_angle = fmod(_prop_angle + engine_rpm * 30.0 * delta, TAU)
@@ -154,7 +176,8 @@ func _update_systems(delta: float) -> void:
 	var spool := delta / maxf(data.engine_spool_time_s, 0.01)
 	engine_rpm = move_toward(engine_rpm, 1.0 if engine_on else 0.0, spool)
 	if engine_rpm > 0.0:
-		var burn := data.fuel_burn_full_kg_s * lerpf(data.idle_burn_fraction, 1.0, throttle)
+		var burn := data.fuel_burn_full_kg_s * lerpf(data.idle_burn_fraction, 1.0, minf(throttle, 1.0))
+		burn *= lerpf(1.0, data.afterburner_burn_multiplier, afterburner)
 		fuel_kg = maxf(0.0, fuel_kg - burn * engine_rpm * delta)
 		if fuel_kg <= 0.0:
 			engine_on = false   # flamed out: glide from here
@@ -283,7 +306,14 @@ func _flap_value(values: PackedFloat32Array) -> float:
 
 
 func _thrust(speed: float) -> float:
-	var t := data.max_thrust_n * throttle * engine_rpm
+	var t: float
+	if data.afterburner_thrust_n > 0.0:
+		# Dry thrust up to the afterburner detent, then afterburner on top.
+		t = data.max_thrust_n * clampf(throttle / data.afterburner_threshold, 0.0, 1.0) \
+				+ data.afterburner_thrust_n * afterburner
+		t *= engine_rpm
+	else:
+		t = data.max_thrust_n * throttle * engine_rpm
 	if data.thrust_zero_speed_kt > 0.0:
 		t *= maxf(0.0, 1.0 - speed * WorldScale.MS_TO_KT / data.thrust_zero_speed_kt)
 	# Soft ceiling: thin air takes the thrust away.
@@ -291,9 +321,13 @@ func _thrust(speed: float) -> float:
 	return t
 
 
-## Wreck the aircraft: stops dead on the ground, engine off, gear collapsed,
-## nose tipped down. The flight scene adds the smoke and the result screen.
-func crash() -> void:
+## Wreck the aircraft: the fuselage breaks into 2 pieces (severity < 0.5) or
+## 3 pieces (violent impact) that tumble apart and come to rest. Engine off,
+## controls dead. The flight scene adds fire/smoke and the result screen.
+## severity: 0..1 (from impact sink rate and speed).
+func crash(severity := 0.5) -> void:
+	var impact_vel := velocity_m
+	var crash_pitch := pitch
 	crashed = true
 	controls_enabled = false
 	engine_on = false
@@ -305,9 +339,54 @@ func crash() -> void:
 	stalled = false
 	gear_down = false
 	gear_pos = 0.0
-	pitch = deg_to_rad(-6.0)
+	pitch = 0.0
 	_sync_node()
+	if data.sprite:
+		_build_fragments(severity, impact_vel, crash_pitch)
 	queue_redraw()
+
+
+func _build_fragments(severity: float, impact_vel: Vector2, crash_pitch: float) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var tex_size := data.sprite.get_size()
+	var sc := data.sprite_scale
+	var cuts: Array = [0.0, 0.33, 0.66, 1.0] if severity >= 0.5 else [0.0, 0.48, 1.0]
+	var origin := Vector2(-tex_size.x * 0.5 * sc, -data.sprite_wheel_bottom_y * sc)
+	var base_vel := Vector2(impact_vel.x, 0.0) * WorldScale.PX_PER_M * 0.35
+	var n := cuts.size() - 1
+	_fragments.clear()
+	for k in n:
+		var x0: float = cuts[k]
+		var x1: float = cuts[k + 1]
+		var src := Rect2(x0 * tex_size.x, 0, (x1 - x0) * tex_size.x, tex_size.y)
+		var centre := (origin + src.get_center() * sc).rotated(-crash_pitch)
+		var spread := (float(k) - (n - 1) * 0.5) * rng.randf_range(25.0, 45.0) * (0.6 + severity)
+		_fragments.append({
+			"src": src,
+			"pos": centre,
+			"vel": base_vel + Vector2(spread, -rng.randf_range(30.0, 70.0) * (0.5 + severity)),
+			"rot": -crash_pitch,
+			"spin": rng.randf_range(-5.0, 5.0) * (0.4 + severity),
+			"resting": false,
+		})
+
+
+func _update_fragments(delta: float) -> void:
+	var g := 160.0   # px/s^2, a bit floaty so the break-up reads
+	for f in _fragments:
+		if f.resting:
+			continue
+		f.vel.y += g * delta
+		f.pos += f.vel * delta
+		f.rot += f.spin * delta
+		var half_h: float = f.src.size.y * data.sprite_scale * 0.35
+		if f.pos.y > -half_h:
+			f.pos.y = -half_h
+			f.vel = Vector2(f.vel.x * 0.55, -f.vel.y * 0.25)
+			f.spin *= 0.5
+			if absf(f.vel.y) < 8.0 and absf(f.vel.x) < 6.0:
+				f.resting = true
 
 
 func _sync_node() -> void:
@@ -322,10 +401,21 @@ func _sync_node() -> void:
 func _draw() -> void:
 	if data == null:
 		return
-	if data.sprite:
+	if crashed and not _fragments.is_empty():
+		_draw_fragments()
+	elif data.sprite:
 		_draw_sprite_aircraft()
 	else:
 		_draw_placeholder(data.length_m * WorldScale.PX_PER_M, data.height_m * WorldScale.PX_PER_M)
+
+
+func _draw_fragments() -> void:
+	var sc := data.sprite_scale
+	for f in _fragments:
+		var src: Rect2 = f.src
+		draw_set_transform(f.pos, f.rot, Vector2(sc, sc))
+		draw_texture_rect_region(data.sprite, Rect2(-src.size * 0.5, src.size), src, Color(0.8, 0.78, 0.76))
+	draw_set_transform(Vector2.ZERO)
 
 
 func _draw_sprite_aircraft() -> void:
@@ -334,16 +424,24 @@ func _draw_sprite_aircraft() -> void:
 	# Everything below is drawn in texture pixels; the transform scales it down
 	# and puts the wheel bottoms (gear down) on the node origin.
 	# On the ground with the gear (partly) up, the plane sits on its belly.
-	var sink := (1.0 - gear_pos) * data.sprite_gear_travel * sc if on_ground else 0.0
+	var sink := (1.0 - gear_pos) * _gear_travel() * sc if on_ground else 0.0
 	draw_set_transform(Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc + sink), 0.0, Vector2(sc, sc))
 
 	# Gear first, so it slides up and disappears behind the fuselage.
-	if data.sprite_gear and gear_pos > 0.05:
-		draw_texture(data.sprite_gear, Vector2(0, -(1.0 - gear_pos) * data.sprite_gear_travel))
+	if gear_pos > 0.05:
+		if data.sprite_gear:
+			draw_texture(data.sprite_gear, Vector2(0, -(1.0 - gear_pos) * data.sprite_gear_travel))
+		else:
+			_draw_code_gear()
+
+	# Afterburner flame out of the nozzle (under the body so it starts inside the nozzle).
+	var ab := afterburner
+	if ab > 0.0:
+		_draw_afterburner(ab)
 	draw_texture(data.sprite, Vector2.ZERO)
 
 	# Flaps: a red panel hanging from the wing trailing edge (40 degrees at LDG).
-	if flap_pos > 0.02:
+	if flap_pos > 0.02 and data.sprite_flap_length > 0.0:
 		var hinge := data.sprite_flap_hinge
 		var ang := deg_to_rad(20.0 * flap_pos)
 		var tip := hinge + Vector2(-cos(ang), sin(ang)) * data.sprite_flap_length
@@ -351,14 +449,54 @@ func _draw_sprite_aircraft() -> void:
 		draw_line(hinge, tip, data.stripe_color, 6.0)
 
 	# Propeller: the art's blurred blades while running, a still blade when stopped.
-	var pc := data.sprite_prop_center
-	if engine_rpm > 0.6 and data.sprite_prop:
-		var flicker := 0.75 + 0.25 * sin(_prop_angle * 3.0)
-		draw_texture(data.sprite_prop, Vector2.ZERO, Color(1, 1, 1, flicker))
-	else:
-		var span := data.sprite_prop_radius * absf(cos(_prop_angle))
-		draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
+	if data.has_propeller:
+		var pc := data.sprite_prop_center
+		if engine_rpm > 0.6 and data.sprite_prop:
+			var flicker := 0.75 + 0.25 * sin(_prop_angle * 3.0)
+			draw_texture(data.sprite_prop, Vector2.ZERO, Color(1, 1, 1, flicker))
+		else:
+			var span := data.sprite_prop_radius * absf(cos(_prop_angle))
+			draw_rect(Rect2(pc.x - 2, pc.y - span, 4, span * 2), Color(0.2, 0.2, 0.22))
 	draw_set_transform(Vector2.ZERO)
+
+
+func _gear_travel() -> float:
+	if data.sprite_gear:
+		return data.sprite_gear_travel
+	var top := 0.0
+	for y in data.sprite_gear_top_y:
+		top = maxf(top, y)
+	return data.sprite_wheel_bottom_y - top
+
+
+## Simple legs and wheels for aircraft whose art shows the gear retracted.
+func _draw_code_gear() -> void:
+	var leg_col := Color(0.42, 0.44, 0.46)
+	for i in data.sprite_gear_x.size():
+		var gx := data.sprite_gear_x[i]
+		var top_y := data.sprite_gear_top_y[i]
+		var r := data.sprite_gear_wheel_size[i] * 0.5
+		var wy := lerpf(top_y - r, data.sprite_wheel_bottom_y - r, gear_pos)
+		draw_rect(Rect2(gx - 2.5, top_y, 5, wy - top_y), leg_col)
+		draw_rect(Rect2(gx - 1, top_y, 2, wy - top_y), Color(0.6, 0.62, 0.64))
+		draw_circle(Vector2(gx, wy), r, Color(0.07, 0.07, 0.08))
+		draw_circle(Vector2(gx, wy), r * 0.45, Color(0.6, 0.62, 0.66))
+
+
+## Flickering afterburner: orange outer flame, yellow-white core, blue shock diamonds.
+func _draw_afterburner(strength: float) -> void:
+	var n := data.sprite_nozzle
+	var flicker := 0.85 + 0.15 * sin(_time * 47.0) + 0.05 * sin(_time * 113.0)
+	var length := data.afterburner_flame_length * (0.5 + 0.5 * strength) * flicker
+	var h := 14.0
+	draw_colored_polygon(PackedVector2Array([n + Vector2(6, -h * 0.5), n + Vector2(-length, 0), n + Vector2(6, h * 0.5)]),
+			Color(1.0, 0.5, 0.1, 0.75))
+	draw_colored_polygon(PackedVector2Array([n + Vector2(6, -h * 0.3), n + Vector2(-length * 0.7, 0), n + Vector2(6, h * 0.3)]),
+			Color(1.0, 0.85, 0.45, 0.9))
+	for k in 3:
+		var d := n + Vector2(-length * (0.2 + 0.18 * k), 0)
+		draw_colored_polygon(PackedVector2Array([d + Vector2(4, 0), d + Vector2(0, -3), d + Vector2(-4, 0), d + Vector2(0, 3)]),
+				Color(0.6, 0.8, 1.0, 0.8))
 
 
 func _draw_placeholder(l: float, h: float) -> void:
