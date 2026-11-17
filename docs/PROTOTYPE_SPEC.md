@@ -63,6 +63,7 @@ Use a `CharacterBody2D` (or `Node2D` with manual movement) updated in `_physics_
 
 ## World layout
 
+- **Risalpur is the starting point** (PAF Academy Asghar Khan), Peshawar the destination; `route_distance_m` = 9,000 m on the flight scene.
 - Departure runway on the left, destination runway several km to the right (compressed so a flight takes ~2–3 minutes in the trainer). Distance comes from data.
 - Ground: flat line at y = 0 with slight cosmetic undulation between bases (no collision complexity yet). Flying into the ground away from a runway = crash.
 - Ceiling: soft limit (e.g. thin air reduces thrust above X) so the player can't fly to infinity.

@@ -14,6 +14,10 @@ extends Node2D
 @export var dash_spacing_m := 50.0
 @export var dash_length_m := 20.0
 @export var light_spacing_m := 60.0
+## Approach light poles before the threshold, to line up from further out.
+@export var approach_lights_m := 150.0
+@export var approach_light_spacing_m := 25.0
+@export var approach_light_color := Color(1.0, 0.3, 0.25)
 
 
 func _draw() -> void:
@@ -29,6 +33,14 @@ func _draw() -> void:
 	# Threshold blocks at both ends.
 	for tx in [0.0, length_m - 30.0]:
 		draw_rect(Rect2(tx * px, 0, 30.0 * px, 1), marking_color)
+
+	# Approach lights: taller poles getting shorter toward the threshold.
+	var ax := -approach_lights_m
+	while ax < -1.0:
+		var hgt := roundi(3 + 6 * (-ax / approach_lights_m))
+		draw_rect(Rect2(ax * px, -hgt, 1, hgt), light_post_color)
+		draw_rect(Rect2(ax * px - 1, -hgt - 2, 3, 2), approach_light_color)
+		ax += approach_light_spacing_m
 
 	x = 0.0
 	while x <= length_m:

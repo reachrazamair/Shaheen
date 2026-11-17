@@ -8,24 +8,33 @@ extends CanvasLayer
 @onready var phase_box: Control = $PhaseBox
 @onready var messages: Control = $MessageBox
 @onready var debug_label: Label = $DebugLabel
+@onready var route_bar: Control = $RouteBar
 
 ## Seconds between repeated STALL callouts.
 @export var stall_callout_cooldown_s := 4.0
 
 var aircraft: Aircraft
+var departure: BaseData
+var destination: BaseData
+var route_distance_m := 1.0
 var has_flown := false
 var _said := {}
 var _stall_cooldown := 0.0
 var _last_touchdown_fpm := 0.0
 
 
-func setup(a: Aircraft) -> void:
+func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: float) -> void:
 	aircraft = a
+	departure = from_base
+	destination = to_base
+	route_distance_m = distance_m
+	route_bar.to_name = to_base.short_name
+	route_bar.total_m = distance_m
 	panel.aircraft = a
 	phase_box.aircraft = a
 	a.lifted_off.connect(_on_lifted_off)
 	a.touched_down.connect(_on_touched_down)
-	messages.say("Welcome, cadet. Press E to start the engine.")
+	messages.say("Welcome to %s, cadet. Today: fly to %s. Press E to start the engine." % [from_base.short_name.capitalize(), to_base.short_name.capitalize()])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -36,10 +45,24 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if aircraft == null:
 		return
-	phase_box.phase = FlightPhase.compute(aircraft, has_flown)
+	var remaining := distance_to_destination()
+	route_bar.remaining_m = remaining
+	phase_box.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
 	_instructor(delta)
 	if debug_label.visible:
 		_update_debug()
+
+
+## Metres to the destination runway threshold (negative once past it).
+func distance_to_destination() -> float:
+	return route_distance_m - aircraft.pos_m.x
+
+
+## Comfortable approach speed: 1.3 x the stall speed with landing flaps.
+func approach_speed_kt() -> int:
+	var d := aircraft.data
+	var bonus := d.flap_lift_bonus[d.flap_lift_bonus.size() - 1] if not d.flap_lift_bonus.is_empty() else 0.0
+	return roundi(1.3 * d.stall_speed_kt / sqrt(1.0 + bonus))
 
 
 func _once(key: String, text: String, urgent := false) -> void:
@@ -69,7 +92,19 @@ func _instructor(delta: float) -> void:
 		if a.flap_setting != 0 and a.altitude_ft > 500.0:
 			_once("flaps_up", "Clean up: press F until the flaps read UP.")
 		if a.altitude_ft > 1000.0:
-			_once("cruise", "Good climb. Watch your speed: below %d kt you will stall." % roundi(a.data.stall_speed_kt))
+			_once("cruise", "Good climb. %s is %.0f km ahead. Keep above %d kt or you will stall." % [
+					destination.short_name.capitalize(), distance_to_destination() / 1000.0, roundi(a.data.stall_speed_kt)])
+		var dist := distance_to_destination()
+		var dest := destination.short_name.capitalize()
+		if dist < 5000.0 and dist > 0.0:
+			_once("descend", "%s ahead. Start your descent and slow down." % dest)
+		if dist < 3000.0 and dist > 0.0:
+			var gear := "gear down (G), " if a.data.retractable_gear and not a.gear_down else ""
+			_once("configure", "Set up to land: %sflaps LDG (F), about %d kt." % [gear, approach_speed_kt()])
+		if dist < 1200.0 and a.altitude_ft < 800.0:
+			_once("cleared", "%s tower: cleared to land. Touch down gently." % dest)
+		if dist < -destination.runway_length_m:
+			_once("overshot", "You flew past the runway. Turn around is not possible yet: press R to retry.")
 	elif has_flown and a.speed_kt < 1.0:
 		_once("stopped", "Nicely done. Press R to fly again.")
 
