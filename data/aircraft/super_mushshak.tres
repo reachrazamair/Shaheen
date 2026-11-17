@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AircraftData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Super Mushshak"
+mass_kg = 1100.0
+max_thrust_n = 3000.0
+drag_coefficient = 0.55
+rolling_friction = 0.03
+brake_strength = 0.4
+length_m = 7.0
+height_m = 2.6
+body_color = Color(0.95, 0.95, 0.95, 1)
+stripe_color = Color(0.82, 0.12, 0.12, 1)
+trim_color = Color(0.25, 0.4, 0.8, 1)
