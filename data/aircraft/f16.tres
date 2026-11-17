@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="AircraftData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="AircraftData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
 [ext_resource type="Texture2D" path="res://assets/sprites/f16_body.png" id="2_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/f16_elevator.png" id="3_elev"]
 
 [resource]
 script = ExtResource("1_data")
@@ -23,7 +24,7 @@ drag_coefficient = 1.42
 induced_drag = 2.0
 pitch_rate_drag = 0.05
 stall_speed_kt = 125.0
-stall_aoa_deg = 22.0
+stall_aoa_deg = 18.0
 zero_aoa_lift = 0.1
 post_stall_lift = 0.35
 stall_nose_drop_deg_s = 0.0
@@ -36,13 +37,13 @@ retractable_gear = true
 gear_drag = 0.15
 gear_transit_time_s = 3.0
 airbrake_drag = 1.2
-pitch_g_limit = 3.0
-pitch_rate_deg_s = 20.0
-pitch_accel_deg_s2 = 60.0
+pitch_rate_deg_s = 30.0
+pitch_accel_deg_s2 = 300.0
 max_pitch_up_deg = 40.0
 max_pitch_down_deg = 40.0
 rotate_speed_kt = 145.0
-max_ground_pitch_deg = 10.0
+rotate_start_fraction = 0.7
+max_ground_pitch_deg = 12.0
 rolling_friction = 0.02
 brake_strength = 0.45
 perfect_touchdown_fpm = 120.0
@@ -56,6 +57,14 @@ gauge_vsi_max_fpm = 6000.0
 service_ceiling_m = 6000.0
 ceiling_fade_m = 2000.0
 cockpit_style = 1
+g_effects = true
+g_effect_min_speed_kt = 250.0
+blackout_start_g = 5.0
+blackout_full_g = 9.0
+redout_start_g = -1.5
+redout_full_g = -4.0
+g_effect_onset = 0.8
+g_effect_recovery = 1.2
 length_m = 15.0
 height_m = 5.0
 sprite = ExtResource("2_sprite")
@@ -67,6 +76,10 @@ sprite_gear_wheel_size = PackedFloat32Array(20, 16)
 sprite_nozzle = Vector2(14, 112)
 afterburner_flame_length = 260.0
 afterburner_flame_width = 30.0
+sprite_elevator = ExtResource("3_elev")
+sprite_elevator_hinge = Vector2(60, 118)
+elevator_max_deg = 20.0
+elevator_speed = 6.0
 sprite_flap_length = 0.0
 body_color = Color(0.55, 0.58, 0.6, 1)
 stripe_color = Color(0.4, 0.42, 0.45, 1)

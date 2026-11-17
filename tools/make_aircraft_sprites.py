@@ -9,13 +9,16 @@ aligned layers to assets/sprites/<name>_<layer>.png:
   body - the aircraft (minus gear/prop if those are split out)
   gear - landing gear cut from the art (slides up to retract), optional
   prop - propeller blades (shown while the engine runs), optional
+  elevator - the tailplane cut out of the body (drawn rotating with the
+             stick), optional; the hole left in the body is filled with a
+             dark fuselage grey where it overlaps the fuselage
 Textures are stored at TEXTURE_SCALE x the on-screen size and drawn scaled
 down with mipmaps, so they look like the art rather than blocky.
 It prints texture-space positions to copy into data/aircraft/<name>.tres.
 """
 import sys
 from collections import deque
-from PIL import Image
+from PIL import Image, ImageDraw
 
 TEXTURE_SCALE = 4   # texture px per world px
 
@@ -37,8 +40,13 @@ CONFIGS = {
         "prop": None,
         # Points for code-drawn parts (source px): engine nozzle, gear attach points
         # on the fuselage underside, and where the wheels must reach (below the tank).
-        "points": {"nozzle": (50, 189), "main_gear_top": (340, 222), "nose_gear_top": (560, 212),
-                   "wheel_bottom": (0, 296)},
+        "points": {"nozzle": (56, 190), "main_gear_top": (340, 262), "nose_gear_top": (476, 241),
+                   "wheel_bottom": (0, 296), "elevator_hinge": (125, 199)},
+        # All-moving tailplane, in OUTPUT texture px: outline polygon, hole fill
+        # colour, and the hole is only filled right of fill_min_x (left of it
+        # there is no fuselage behind the tailplane, just sky).
+        "elevator": {"poly": [(3, 111), (79, 110), (79, 119), (42, 126), (10, 127), (3, 125)],
+                     "fill": (66, 70, 76, 255), "fill_min_x": 13},
     },
 }
 
@@ -106,8 +114,22 @@ def build(name, cfg):
     out_w = cfg["display_width"] * TEXTURE_SCALE
     k = out_w / (box[2] - box[0])
     out_h = round((box[3] - box[1]) * k)
-    for layer, img in layers.items():
-        img.crop(box).resize((out_w, out_h), Image.LANCZOS).save("assets/sprites/%s_%s.png" % (name, layer))
+    out = {layer: img.crop(box).resize((out_w, out_h), Image.LANCZOS) for layer, img in layers.items()}
+    if cfg.get("elevator"):
+        e = cfg["elevator"]
+        mask = Image.new("L", (out_w, out_h), 0)
+        ImageDraw.Draw(mask).polygon(e["poly"], fill=255)
+        elev = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
+        elev.paste(out["body"], (0, 0), mask)
+        body = out["body"]
+        bpx, mpx = body.load(), mask.load()
+        for y in range(out_h):
+            for x in range(out_w):
+                if mpx[x, y]:
+                    bpx[x, y] = e["fill"] if x >= e["fill_min_x"] and bpx[x, y][3] > 0 else (0, 0, 0, 0)
+        out["elevator"] = elev
+    for layer, img in out.items():
+        img.save("assets/sprites/%s_%s.png" % (name, layer))
 
     def t(x, y):
         return round((x - box[0]) * k, 1), round((y - box[1]) * k, 1)

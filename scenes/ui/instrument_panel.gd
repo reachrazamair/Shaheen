@@ -302,7 +302,7 @@ func _draw_speed_tape(s: Rect2) -> void:
 		draw_rect(Rect2(tape.position.x + 1, top, 2, tape.end.y - top), lamp_red)
 	var mach := kt / 661.5
 	_text(Vector2(s.position.x + 2, s.end.y - 2), "M %.2f" % mach, mfd_green)
-	var g := aircraft.lift_ratio * cos(aircraft.pitch) if not aircraft.on_ground else 1.0
+	var g := aircraft.g_load
 	_text_right(Vector2(s.end.x - 2, s.position.y + 7), "G %.1f" % g, mfd_green)
 
 

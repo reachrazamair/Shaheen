@@ -92,10 +92,6 @@ extends Resource
 @export var airbrake_drag := 1.2
 
 @export_group("Pitch")
-## Fly-by-wire smoothing: at high speed the pitch rate is capped so the flight
-## path never turns harder than this many G (0 = off, pure stick rate).
-## Makes fast jets feel smooth instead of twitchy.
-@export var pitch_g_limit := 0.0
 ## Max nose rotation rate at full control authority.
 @export var pitch_rate_deg_s := 25.0
 ## How quickly the pitch rate builds/settles (smoothing; higher = snappier).
@@ -104,6 +100,9 @@ extends Resource
 @export var max_pitch_down_deg := 30.0
 ## Below this speed the nose wheel stays on the ground.
 @export var rotate_speed_kt := 60.0
+## Holding nose-up on the takeoff roll starts lifting the nose from this
+## fraction of rotate speed (fully free at rotate speed).
+@export var rotate_start_fraction := 0.7
 ## Max nose-up on the ground before the tail would strike.
 @export var max_ground_pitch_deg := 12.0
 
@@ -135,6 +134,20 @@ extends Resource
 @export var service_ceiling_m := 3000.0
 ## ...and is gone this many metres higher (soft ceiling).
 @export var ceiling_fade_m := 1000.0
+
+@export_group("Pilot G effects")
+## Screen effects from G on the pilot (fighters). Blackout: high positive G
+## (sharp pull-up) darkens the screen from the edges. Redout: strong negative G
+## (sharp push-over) tints it red. Only above g_effect_min_speed_kt.
+@export var g_effects := false
+@export var g_effect_min_speed_kt := 250.0
+@export var blackout_start_g := 5.0
+@export var blackout_full_g := 9.0
+@export var redout_start_g := -1.5
+@export var redout_full_g := -4.0
+## How fast the effect builds and fades (fraction of full per second).
+@export var g_effect_onset := 0.8
+@export var g_effect_recovery := 1.2
 
 @export_group("Cockpit")
 ## Instrument panel look: Analog = grey panel with round dials (trainers),
@@ -173,6 +186,14 @@ extends Resource
 @export var afterburner_flame_length := 60.0
 ## Flame height at the nozzle (texture px); it widens a little further back.
 @export var afterburner_flame_width := 14.0
+## Moving tailplane/elevator layer (cut from the body by the sprite tool),
+## drawn rotating about its hinge with the pitch keys. Empty = no moving tail.
+@export var sprite_elevator: Texture2D
+@export var sprite_elevator_hinge := Vector2.ZERO
+## Full deflection (degrees) at full stick; trailing edge up for nose-up.
+@export var elevator_max_deg := 12.0
+## How fast the surface follows the stick (full travel per 1/x seconds).
+@export var elevator_speed := 6.0
 ## Wing trailing edge, where the flap hangs from (flap length 0 = don't draw).
 @export var sprite_flap_hinge := Vector2(130, 40)
 @export var sprite_flap_length := 18.0

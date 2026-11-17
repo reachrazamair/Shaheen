@@ -39,6 +39,10 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	radar.destination_runway_m = to_base.runway_length_m
 	cadet_tag.text = GameState.cadet_title()
 	panel.aircraft = a
+	var g_fx := preload("res://scenes/ui/g_effect.gd").new()
+	g_fx.name = "GEffect"
+	add_child(g_fx)
+	g_fx.aircraft = a
 	radar.aircraft = a
 	_prev_gear_down = a.gear_down
 	_prev_flap = a.flap_setting

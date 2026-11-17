@@ -63,8 +63,16 @@ var touchdown_pitch := 0.0
 
 var _stall_timer := 0.0
 var _prop_angle := 0.0
+## Elevator/tailplane deflection, -1 (nose-down) .. 1 (nose-up), follows the stick.
+var elevator := 0.0
+## G felt by the pilot (along the seat axis, 1 = level flight), smoothed.
+var g_load := 1.0
+## 0..1 screen effects driven by g_load (see AircraftData "Pilot G effects").
+var blackout := 0.0
+var redout := 0.0
+var _prev_vel := Vector2.ZERO
 var _time := 0.0
-## Wreckage pieces after a crash: {src (texture Rect2), pos, vel, rot, spin, resting}
+## Wreckage pieces after a crash: {poly (texture px around the piece centre), uvs, pos, vel, rot, spin, resting}
 var _fragments: Array = []
 ## Node transform at the previous and latest physics tick. Each rendered frame
 ## draws the aircraft between the two, so fast jets move smoothly even when the
@@ -136,6 +144,11 @@ func reset_state() -> void:
 	flap_direction = -1
 	gear_down = true
 	gear_pos = 1.0
+	g_load = 1.0
+	blackout = 0.0
+	redout = 0.0
+	_prev_vel = Vector2.ZERO
+	elevator = 0.0
 	_sync_node(true)
 
 
@@ -166,6 +179,7 @@ func _physics_process(delta: float) -> void:
 	_update_systems(delta)
 	_update_pitch(delta)
 	_integrate(delta)
+	_update_g(delta)
 	_sync_node()
 	queue_redraw()
 
@@ -208,12 +222,9 @@ func _update_pitch(delta: float) -> void:
 	# Controls are weak at low speed and fully effective from rotate speed upward.
 	var authority := clampf(speed / rotate_ms, 0.25, 1.0)
 	var stick := Input.get_axis("pitch_down", "pitch_up") if controls_enabled else 0.0
+	elevator = move_toward(elevator, stick, data.elevator_speed * delta)
 	var target_rate := stick \
 			* deg_to_rad(data.pitch_rate_deg_s) * authority
-	if data.pitch_g_limit > 0.0 and not on_ground:
-		# Fly-by-wire: the faster you go, the gentler the nose moves.
-		var max_rate := data.pitch_g_limit * WorldScale.GRAVITY / maxf(speed, 1.0)
-		target_rate = clampf(target_rate, -max_rate, max_rate)
 	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
 	if stalled:
 		# The nose drops on its own; the player can push it down faster but not hold it up.
@@ -221,8 +232,11 @@ func _update_pitch(delta: float) -> void:
 	pitch += pitch_rate * delta
 
 	if on_ground:
-		# Nose wheel stays down below rotate speed; above it the nose may rise to the tail-strike limit.
-		var upper := deg_to_rad(data.max_ground_pitch_deg) if speed >= rotate_ms else 0.0
+		# The nose wheel can start to lift from rotate_start_fraction x rotate speed;
+		# the allowed nose-up grows to the tail-strike limit at rotate speed.
+		var start := rotate_ms * data.rotate_start_fraction
+		var allow := clampf((speed - start) / maxf(rotate_ms - start, 0.1), 0.0, 1.0)
+		var upper := deg_to_rad(data.max_ground_pitch_deg) * allow
 		if pitch > upper:
 			pitch = maxf(upper, pitch - deg_to_rad(data.pitch_rate_deg_s) * delta)
 		if pitch < 0.0:
@@ -343,6 +357,8 @@ func crash(severity := 0.5) -> void:
 	var crash_pitch := pitch
 	crashed = true
 	controls_enabled = false
+	blackout = 0.0
+	redout = 0.0
 	engine_on = false
 	engine_rpm = 0.0
 	throttle = 0.0
@@ -364,42 +380,122 @@ func _build_fragments(severity: float, impact_vel: Vector2, crash_pitch: float) 
 	rng.randomize()
 	var tex_size := data.sprite.get_size()
 	var sc := data.sprite_scale
-	var cuts: Array = [0.0, 0.33, 0.66, 1.0] if severity >= 0.5 else [0.0, 0.48, 1.0]
+	# Only the painted part of the texture (so pieces rest on their real bottom edge).
+	var used := Rect2(data.sprite.get_image().get_used_rect())
+	var w := used.size.x
+	# Tear lines: 1 (moderate impact, 2 pieces) or 2 (violent, 3 pieces), at random spots.
+	var cut_fracs: Array = []
+	if severity >= 0.5:
+		cut_fracs = [rng.randf_range(0.25, 0.4), rng.randf_range(0.6, 0.75)]
+	else:
+		cut_fracs = [rng.randf_range(0.38, 0.62)]
+	# Each tear is a jagged line from top to bottom; the outer edges are straight.
+	var lines: Array = [_straight_line(used.position.x, used)]
+	for c in cut_fracs:
+		lines.append(_tear_line(used.position.x + c * w, used, w * 0.07, rng))
+	lines.append(_straight_line(used.end.x, used))
+
 	var origin := Vector2(-tex_size.x * 0.5 * sc, -data.sprite_wheel_bottom_y * sc)
 	var base_vel := Vector2(impact_vel.x, 0.0) * WorldScale.PX_PER_M * 0.35
-	var n := cuts.size() - 1
+	var n := lines.size() - 1
 	_fragments.clear()
 	for k in n:
-		var x0: float = cuts[k]
-		var x1: float = cuts[k + 1]
-		var src := Rect2(x0 * tex_size.x, 0, (x1 - x0) * tex_size.x, tex_size.y)
-		var centre := (origin + src.get_center() * sc).rotated(-crash_pitch)
-		var spread := (float(k) - (n - 1) * 0.5) * rng.randf_range(25.0, 45.0) * (0.6 + severity)
+		var left: PackedVector2Array = lines[k]
+		var right: PackedVector2Array = lines[k + 1]
+		var poly := PackedVector2Array(left)
+		for m in range(right.size() - 1, -1, -1):
+			poly.append(right[m])
+		var centre_tex := Vector2.ZERO
+		for v in poly:
+			centre_tex += v
+		centre_tex /= poly.size()
+		var local := PackedVector2Array()
+		var uvs := PackedVector2Array()
+		for v in poly:
+			local.append(v - centre_tex)
+			uvs.append(v / tex_size)
+		var spread := (float(k) - (n - 1) * 0.5) * rng.randf_range(15.0, 30.0) * (0.6 + severity)
 		_fragments.append({
-			"src": src,
-			"pos": centre,
-			"vel": base_vel + Vector2(spread, -rng.randf_range(30.0, 70.0) * (0.5 + severity)),
+			"poly": local,
+			"uvs": uvs,
+			"pos": (origin + centre_tex * sc).rotated(-crash_pitch),
+			"vel": base_vel + Vector2(spread, -rng.randf_range(10.0, 35.0) * severity),
 			"rot": -crash_pitch,
-			"spin": rng.randf_range(-5.0, 5.0) * (0.4 + severity),
+			"spin": rng.randf_range(-1.5, 1.5) * severity,
 			"resting": false,
 		})
 
 
+func _straight_line(x: float, used: Rect2) -> PackedVector2Array:
+	return PackedVector2Array([Vector2(x, used.position.y), Vector2(x, used.end.y)])
+
+
+## A ragged tear from the top to the bottom of the painted area around x.
+func _tear_line(x: float, used: Rect2, jag: float, rng: RandomNumberGenerator) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var steps := 9
+	var lean := rng.randf_range(-jag, jag)   # the whole tear slants a bit
+	for s in steps + 1:
+		var f := float(s) / steps
+		var zig := jag * (0.5 if s % 2 == 0 else -0.5) + rng.randf_range(-jag, jag) * 0.6
+		if s == 0 or s == steps:
+			zig *= 0.3
+		pts.append(Vector2(x + lean * (f - 0.5) * 2.0 + zig, lerpf(used.position.y, used.end.y, f)))
+	return pts
+
+
+## Pieces fly, then hit the ground and slide to a stop: no bounce.
 func _update_fragments(delta: float) -> void:
-	var g := 160.0   # px/s^2, a bit floaty so the break-up reads
+	var g := 220.0   # px/s^2
+	var sc := data.sprite_scale
 	for f in _fragments:
 		if f.resting:
 			continue
-		f.vel.y += g * delta
-		f.pos += f.vel * delta
-		f.rot += f.spin * delta
-		var half_h: float = f.src.size.y * data.sprite_scale * 0.35
-		if f.pos.y > -half_h:
-			f.pos.y = -half_h
-			f.vel = Vector2(f.vel.x * 0.55, -f.vel.y * 0.25)
-			f.spin *= 0.5
-			if absf(f.vel.y) < 8.0 and absf(f.vel.x) < 6.0:
+		var grounded := false
+		# Lowest point of the piece at its current angle.
+		var bottom := -INF
+		for v in f.poly:
+			bottom = maxf(bottom, (v * sc).rotated(f.rot).y)
+		if f.pos.y + bottom >= -0.01:
+			grounded = true
+		if grounded:
+			f.pos.y = -bottom
+			f.vel.y = 0.0
+			f.spin = 0.0
+			f.vel.x = move_toward(f.vel.x, 0.0, 260.0 * delta)
+			f.pos.x += f.vel.x * delta
+			if is_zero_approx(f.vel.x):
 				f.resting = true
+		else:
+			f.vel.y += g * delta
+			f.pos += f.vel * delta
+			f.rot += f.spin * delta
+			# Landed this tick: settle on the ground next tick.
+			var new_bottom := -INF
+			for v in f.poly:
+				new_bottom = maxf(new_bottom, (v * sc).rotated(f.rot).y)
+			if f.pos.y + new_bottom > 0.0:
+				f.pos.y = -new_bottom
+
+
+## Felt G = (acceleration + gravity) along the aircraft's "up" axis, in g.
+func _update_g(delta: float) -> void:
+	var felt := 1.0
+	if not on_ground:
+		var acc := (velocity_m - _prev_vel) / delta + Vector2(0.0, WorldScale.GRAVITY)
+		felt = acc.dot(Vector2(-sin(pitch), cos(pitch))) / WorldScale.GRAVITY
+	_prev_vel = velocity_m
+	g_load = lerpf(g_load, felt, 1.0 - exp(-8.0 * delta))
+
+	var black_target := 0.0
+	var red_target := 0.0
+	if data.g_effects and not crashed and speed_kt >= data.g_effect_min_speed_kt:
+		black_target = clampf(inverse_lerp(data.blackout_start_g, data.blackout_full_g, g_load), 0.0, 1.0)
+		red_target = clampf(inverse_lerp(data.redout_start_g, data.redout_full_g, g_load), 0.0, 1.0)
+	blackout = move_toward(blackout, black_target,
+			(data.g_effect_onset if black_target > blackout else data.g_effect_recovery) * delta)
+	redout = move_toward(redout, red_target,
+			(data.g_effect_onset if red_target > redout else data.g_effect_recovery) * delta)
 
 
 ## Called after each physics step (teleport = no smoothing from the old spot).
@@ -441,9 +537,8 @@ func _draw() -> void:
 func _draw_fragments() -> void:
 	var sc := data.sprite_scale
 	for f in _fragments:
-		var src: Rect2 = f.src
 		draw_set_transform(f.pos, f.rot, Vector2(sc, sc))
-		draw_texture_rect_region(data.sprite, Rect2(-src.size * 0.5, src.size), src, Color(0.8, 0.78, 0.76))
+		draw_colored_polygon(f.poly, Color(0.8, 0.78, 0.76), f.uvs, data.sprite)
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -468,6 +563,14 @@ func _draw_sprite_aircraft() -> void:
 	if ab > 0.0:
 		_draw_afterburner(ab)
 	draw_texture(data.sprite, Vector2.ZERO)
+
+	# Moving tailplane: rotates about its hinge, trailing edge up for nose-up.
+	if data.sprite_elevator:
+		var h := data.sprite_elevator_hinge
+		var base := Vector2(-size.x * 0.5, -data.sprite_wheel_bottom_y * sc + sink)
+		draw_set_transform(base + h * sc, deg_to_rad(data.elevator_max_deg) * elevator, Vector2(sc, sc))
+		draw_texture(data.sprite_elevator, -h)
+		draw_set_transform(base, 0.0, Vector2(sc, sc))
 
 	# Flaps: a red panel hanging from the wing trailing edge (40 degrees at LDG).
 	if flap_pos > 0.02 and data.sprite_flap_length > 0.0:
