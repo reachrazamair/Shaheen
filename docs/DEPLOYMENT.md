@@ -6,9 +6,8 @@ A Godot **Web export** is just a folder of static files (`index.html`, `.js`, `.
 
 ## 1. One-time setup in Godot
 
-1. Editor → Manage Export Templates → **Download and Install** (must match the Godot version).
-2. Project → Export → Add… → **Web**.
-3. Preset settings:
+1. Editor → Manage Export Templates → **Download and Install** (must match the Godot version, 4.7.2). They land in `%APPDATA%/Godot/export_templates/4.7.2.stable/`.
+2. The **Web export preset is already in the repo** (`export_presets.cfg`, preset name `"Web"`), so Project → Export shows it ready. For reference, its settings are:
    - **Thread Support: OFF.** The game then runs without special cross-origin isolation headers (SharedArrayBuffer), which keeps hosting simple and works better on phones.
    - Export path: `build/web/index.html` (the HTML file **must** be called `index.html`).
    - Renderer must be **Compatibility** (Project Settings). Forward+ / Mobile won't run on the web.
@@ -40,7 +39,7 @@ After that, every update is:
 1. Export from Godot (Project → Export → Web → Export Project → `build/web/index.html`).
 2. `vercel deploy build/web --prod`
 
-Optional: add a script, e.g. `deploy.sh` (or `deploy.bat` on Windows), that runs Godot's headless export and then the deploy command:
+**Shortcut: double-click `deploy.bat`** in the project folder (Windows). It runs the export and then the deploy command below, and stops with a message if the export fails (usually: templates not installed). The commands it runs:
 ```
 godot --headless --export-release "Web" build/web/index.html
 vercel deploy build/web --prod

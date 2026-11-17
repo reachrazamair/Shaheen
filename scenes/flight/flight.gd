@@ -24,6 +24,9 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 @export var route_distance_m := 5000.0
 ## Sky gradient tint at night (top dark navy, faint glow at the horizon).
 @export var night_sky_tint := Color(0.07, 0.09, 0.2)
+## Night: the aircraft is multiplied by this on top of the night tint so it
+## stays visible (1 = as dark as the scenery).
+@export var night_aircraft_boost := Color(2.4, 2.1, 1.5)
 ## Where the aircraft starts, in metres from the departure runway threshold.
 @export var spawn_x_m := 60.0
 ## Seconds between the end of the flight and the result screen.
@@ -243,6 +246,8 @@ func _setup_night() -> void:
 	stars.set_anchors_preset(Control.PRESET_FULL_RECT)
 	$Sky.add_child(stars)
 	aircraft.night_lights = true
+	# Keep the aircraft readable: brighter than the dark world around it.
+	aircraft.modulate = night_aircraft_boost
 
 
 func _update_theme() -> void:

@@ -72,6 +72,8 @@ var elevator := 0.0
 var night_lights := false
 ## True from lift-off until the takeoff pitch limit height (see AircraftData).
 var takeoff_climb := false
+## True on the ground after a touchdown (nose comes down by itself when slow).
+var landing_roll := false
 ## G felt by the pilot (along the seat axis, 1 = level flight), smoothed.
 var g_load := 1.0
 ## 0..1 screen effects driven by g_load (see AircraftData "Pilot G effects").
@@ -153,6 +155,7 @@ func reset_state() -> void:
 	gear_pos = 1.0
 	g_load = 1.0
 	takeoff_climb = false
+	landing_roll = false
 	blackout = 0.0
 	redout = 0.0
 	_prev_vel = Vector2.ZERO
@@ -237,17 +240,37 @@ func _update_pitch(delta: float) -> void:
 		# Optional nose-drop tendency while stalled (0 for both aircraft: the
 		# owner wants it to keep its attitude). The stick always works.
 		target_rate -= deg_to_rad(data.stall_nose_drop_deg_s)
+	var takeoff_attitude := deg_to_rad(data.max_ground_pitch_deg - 2.0)
+	if on_ground and not landing_roll and stick >= 0.0 and pitch > deg_to_rad(1.0) \
+			and speed >= rotate_ms and pitch < takeoff_attitude:
+		# Nose wheel off and at rotate speed: the aircraft keeps rotating to its
+		# takeoff attitude by itself and flies off (no endless wheelie).
+		target_rate = maxf(target_rate, deg_to_rad(data.auto_rotate_rate_deg_s))
 	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
+	var prev_pitch := pitch
 	pitch += pitch_rate * delta
 
 	if on_ground:
-		# The nose wheel can start to lift from rotate_start_fraction x rotate speed;
-		# the allowed nose-up grows to the tail-strike limit at rotate speed.
-		var start := rotate_ms * data.rotate_start_fraction
-		var allow := clampf((speed - start) / maxf(rotate_ms - start, 0.1), 0.0, 1.0)
-		var upper := deg_to_rad(data.max_ground_pitch_deg) * allow
+		var upper: float
+		var lower_rate := deg_to_rad(data.pitch_rate_deg_s)
+		if landing_roll:
+			# After touchdown on the main wheels the nose can be held off only
+			# while fast; below that it comes down gently by itself.
+			var down := rotate_ms * data.nose_down_fraction
+			var hold := clampf((speed - down) / maxf(rotate_ms * 0.15, 0.1), 0.0, 1.0)
+			upper = deg_to_rad(data.max_ground_pitch_deg) * hold
+			lower_rate = deg_to_rad(data.derotate_rate_deg_s)
+		else:
+			# The nose wheel can start to lift from rotate_start_fraction x rotate speed;
+			# the allowed nose-up grows to the tail-strike limit at rotate speed.
+			var start := rotate_ms * data.rotate_start_fraction
+			var allow := clampf((speed - start) / maxf(rotate_ms - start, 0.1), 0.0, 1.0)
+			upper = deg_to_rad(data.max_ground_pitch_deg) * allow
 		if pitch > upper:
-			pitch = maxf(upper, pitch - deg_to_rad(data.pitch_rate_deg_s) * delta)
+			# Above what the speed allows: the nose comes down at lower_rate,
+			# whatever the stick says.
+			pitch = maxf(upper, minf(pitch, prev_pitch - lower_rate * delta)) if prev_pitch > upper else upper
+			pitch_rate = minf(pitch_rate, 0.0)
 		if pitch < 0.0:
 			pitch = 0.0
 			pitch_rate = maxf(pitch_rate, 0.0)
@@ -291,6 +314,7 @@ func _integrate(delta: float) -> void:
 		if force.y > 0.0:
 			on_ground = false
 			takeoff_climb = true
+			landing_roll = false
 			lifted_off.emit()
 		else:
 			# Ground pushes back; friction and brakes scale with weight on the wheels.
@@ -314,6 +338,7 @@ func _integrate(delta: float) -> void:
 		pos_m.y = 0.0
 		velocity_m.y = 0.0
 		on_ground = true
+		landing_roll = true
 		stalled = false
 		touchdown_pitch = pitch
 		if pitch < 0.0:
@@ -735,16 +760,16 @@ func _draw_afterburner(strength: float) -> void:
 			n + Vector2(6, -hw), n + Vector2(-fl * 0.35, -hw * 1.1 + wob),
 			n + Vector2(-fl, wob * 2.0),
 			n + Vector2(-fl * 0.35, hw * 1.1 + wob), n + Vector2(6, hw),
-		]), l[2])
+		]), GameState.glow(l[2]))
 	# Shock diamonds.
 	var d_size := h * 0.22
 	for k in 4:
 		var d := n + Vector2(-length * (0.12 + 0.13 * k), 0)
 		var s := d_size * (1.0 - 0.15 * k)
 		draw_colored_polygon(PackedVector2Array([d + Vector2(s * 1.4, 0), d + Vector2(0, -s), d + Vector2(-s * 1.4, 0), d + Vector2(0, s)]),
-				Color(0.65, 0.85, 1.0, 0.85))
+				GameState.glow(Color(0.65, 0.85, 1.0, 0.85)))
 	# Glow around the nozzle.
-	draw_circle(n + Vector2(-2, 0), h * 0.75, Color(1.0, 0.6, 0.2, 0.25 * strength + 0.1))
+	draw_circle(n + Vector2(-2, 0), h * 0.75, GameState.glow(Color(1.0, 0.6, 0.2, 0.25 * strength + 0.1)))
 
 
 func _draw_placeholder(l: float, h: float) -> void:

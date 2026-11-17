@@ -104,6 +104,14 @@ extends Resource
 ## Takeoff protection: from lift-off until takeoff_limit_height_ft the nose
 ## can't go above this pitch (no hanging vertical with no speed). Free after.
 @export var takeoff_pitch_limit_deg := 20.0
+## Takeoff roll: once the nose wheel is off and speed >= rotate speed, the
+## nose keeps coming up at this rate to the takeoff attitude (tail-strike
+## limit - 2 deg), so the aircraft flies off by itself.
+@export var auto_rotate_rate_deg_s := 4.0
+## Landing roll: below this fraction of rotate speed the nose can't be held
+## up any more and comes down gently at derotate_rate_deg_s.
+@export var nose_down_fraction := 0.75
+@export var derotate_rate_deg_s := 5.0
 @export var takeoff_limit_height_ft := 500.0
 ## Max nose-up on the ground before the tail would strike.
 @export var max_ground_pitch_deg := 12.0

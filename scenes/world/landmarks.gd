@@ -18,6 +18,13 @@ extends Node2D
 ## front doesn't hide their lower part (they're far away, near the horizon).
 @export var base_lift_px := 18.0
 
+## Each landmark is drawn this much larger than its base drawing (owner:
+## bigger and clearer). The tall tower is scaled less so it stays below the HUD.
+const SCALE := {
+	"sea": 1.0, "port_cranes": 1.5, "teen_talwar": 1.8, "bahria_icon": 1.3,
+	"mazar_e_quaid": 1.7, "masjid_e_tooba": 1.7, "skyline": 1.4,
+}
+
 ## [kind, offset_m]
 const LAYOUT := {
 	"sea": [["sea", -1300.0]],
@@ -76,13 +83,16 @@ func _draw() -> void:
 		var x: float = it[1]
 		if it[0] == "sea" or x < left or x > right:
 			continue
+		var s: float = SCALE.get(it[0], 1.0)
+		draw_set_transform(Vector2(x, 0), 0.0, Vector2(s, s))
 		match it[0]:
-			"port_cranes": _port(x)
-			"teen_talwar": _teen_talwar(x)
-			"bahria_icon": _bahria_icon(x)
-			"mazar_e_quaid": _mazar(x)
-			"masjid_e_tooba": _tooba(x)
-			"skyline": _skyline(x, it[2])
+			"port_cranes": _port(0.0)
+			"teen_talwar": _teen_talwar(0.0)
+			"bahria_icon": _bahria_icon(0.0)
+			"mazar_e_quaid": _mazar(0.0)
+			"masjid_e_tooba": _tooba(0.0)
+			"skyline": _skyline(0.0, it[2])
+	draw_set_transform(Vector2.ZERO)
 
 
 # --- Helpers ---
@@ -163,30 +173,66 @@ func _bahria_icon(x: float) -> void:
 		draw_circle(Vector2(x + 1.5, -126), 2.5, _lamp(Color(1, 0.15, 0.1)))
 
 
-## Mazar-e-Quaid: white marble cube with tall pointed arches and a big dome,
-## on a terraced platform. Floodlit at night.
+## Mazar-e-Quaid: on a wide terraced platform, a square white marble block
+## (front face lit, side face in shade) with a tall pointed Moorish arch in a
+## recessed frame filled with the dark copper grille, a cornice, a short drum
+## and a tall, slightly pointed dome with a finial. Floodlit at night.
 func _mazar(x: float) -> void:
-	var marble := _c(Color(0.95, 0.95, 0.92))
-	var shadow := _c(Color(0.78, 0.8, 0.8))
-	var dark := _c(Color(0.45, 0.5, 0.52))
+	var marble := _c(Color(0.96, 0.96, 0.93))
+	var side := _c(Color(0.8, 0.82, 0.82))
+	var recess := _c(Color(0.86, 0.87, 0.86))
+	var grille := _c(Color(0.36, 0.33, 0.28))
+	var stone := _c(Color(0.78, 0.76, 0.72))
 	if _night():
-		marble = _lamp(Color(0.9, 0.9, 0.86))
-		shadow = _lamp(Color(0.62, 0.65, 0.66))
-	draw_rect(Rect2(x - 44, -4, 88, 4), shadow)           # platform
-	draw_rect(Rect2(x - 36, -7, 72, 3), shadow)
-	draw_rect(Rect2(x - 24, -37, 48, 30), marble)         # cube
-	draw_rect(Rect2(x - 24, -37, 48, 2), shadow)
-	# Tall pointed arch with its dark screen.
-	_poly([Vector2(x - 10, -7), Vector2(x + 10, -7), Vector2(x + 10, -24), Vector2(x, -33), Vector2(x - 10, -24)], shadow)
-	_poly([Vector2(x - 7, -7), Vector2(x + 7, -7), Vector2(x + 7, -23), Vector2(x, -29), Vector2(x - 7, -23)], dark)
-	# Dome: a raised, slightly pointed dome on a short drum.
-	draw_rect(Rect2(x - 15, -42, 30, 5), marble)
+		marble = _lamp(Color(0.92, 0.93, 0.9))
+		side = _lamp(Color(0.66, 0.69, 0.7))
+		recess = _lamp(Color(0.8, 0.82, 0.8))
+		grille = Color(0.2, 0.2, 0.18)
+	# Terraced platform with steps in front.
+	draw_rect(Rect2(x - 46, -3, 92, 3), stone)
+	draw_rect(Rect2(x - 38, -6, 76, 3), stone.lightened(0.08))
+	for k in 3:
+		draw_rect(Rect2(x - 8 + k, -3 - k, 16 - 2 * k, 1), stone.darkened(0.12))
+	# Block (wider than tall): front face (-26..14) and the side face in shade (14..22).
+	var top := -32.0
+	draw_rect(Rect2(x - 26, top, 40, 26), marble)
+	draw_colored_polygon(PackedVector2Array([Vector2(x + 14, -6), Vector2(x + 22, -8), Vector2(x + 22, top + 1), Vector2(x + 14, top)]), side)
+	# Recessed frame and the tall pointed arch with its grille.
+	var cx := x - 6.0
+	draw_rect(Rect2(cx - 12, top + 3, 24, 23), recess)
+	var arch := PackedVector2Array([Vector2(cx - 8, -6)])
+	for k in 9:
+		var a := PI * 0.5 * k / 8.0
+		arch.append(Vector2(cx - 8 + 8 * (1.0 - cos(a)) * 0.92, top + 12 - 7 * sin(a)))
+	arch.append(Vector2(cx, top + 4))           # pointed apex
+	for k in range(8, -1, -1):
+		var a := PI * 0.5 * k / 8.0
+		arch.append(Vector2(cx + 8 - 8 * (1.0 - cos(a)) * 0.92, top + 12 - 7 * sin(a)))
+	arch.append(Vector2(cx + 8, -6))
+	draw_colored_polygon(arch, grille)
+	for gy in range(int(top + 9), -6, 3):
+		draw_rect(Rect2(cx - 7, gy, 14, 1), grille.lightened(0.15))
+	draw_rect(Rect2(cx - 0.5, top + 7, 1, 19), grille.lightened(0.15))
+	# Cornice and drum.
+	var dx := x - 2.0                                   # dome centre (over the whole block)
+	draw_rect(Rect2(x - 28, top - 2, 52, 2), side)
+	draw_rect(Rect2(dx - 18, top - 5, 36, 3), marble)
+	# Dome: broad and rounded with a soft point; the right part in shade.
+	var base_y := top - 5.0
 	var dome := PackedVector2Array()
-	for k in 17:
-		var a := PI * k / 16.0
-		dome.append(Vector2(x - cos(a) * 16.0, -42.0 - sin(a) * 18.0 - (3.0 * sin(a) * sin(a) if k == 8 else 0.0)))
+	var shade := PackedVector2Array([Vector2(dx + 4, base_y), Vector2(dx + 4, base_y - 20.5)])
+	var steps := 24
+	for k in steps + 1:
+		var a := float(k) / steps * PI
+		var hw := -cos(a) * 17.0
+		var s := sin(a)
+		var h := pow(s, 0.75) * 19.0 + 3.0 * pow(s, 16.0)
+		dome.append(Vector2(dx + hw, base_y - h))
+		if hw >= 4.0:
+			shade.append(Vector2(dx + hw, base_y - h))
 	draw_colored_polygon(dome, marble)
-	draw_rect(Rect2(x - 1, -66, 2, 6), shadow)            # finial
+	draw_colored_polygon(shade, side)
+	draw_rect(Rect2(dx - 0.5, base_y - 27, 1, 5), stone.darkened(0.2))   # finial
 
 
 ## Masjid-e-Tooba: one wide, low dome and a single tall minaret.
