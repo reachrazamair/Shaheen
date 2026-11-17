@@ -26,3 +26,12 @@ extends Resource
 @export var mountain_height := 0.5
 @export var hill_color := Color(0.42, 0.58, 0.36)
 @export var tree_color := Color(0.25, 0.42, 0.22)
+## Ground around the base (the strip blends between the two bases).
+@export var ground_color := Color(0.42, 0.62, 0.3)
+@export var ground_tuft_color := Color(0.33, 0.52, 0.24)
+
+@export_group("Landmarks")
+## Background landmarks seen while flying in (scenes/world/landmarks.gd LAYOUT),
+## e.g. Karachi: sea, port_cranes, teen_talwar, bahria_icon, mazar_e_quaid,
+## masjid_e_tooba, skyline. Scenery only.
+@export var landmarks := PackedStringArray()

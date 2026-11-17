@@ -8,6 +8,8 @@ extends Control
 ##  - Analog (trainers): grey metal plate with round dials.
 ##  - Glass (fighters, F-16): dark panel with two green digital screens
 ##    (speed tape + Mach, altitude tape + vertical speed bar), G readout.
+##  - Dark analog (Mirage V): round dials on a black-green panel, amber
+##    lettering, and an amber Mach / G strip under the dials.
 
 var aircraft: Aircraft
 
@@ -31,6 +33,11 @@ var aircraft: Aircraft
 @export var mfd_green := Color(0.35, 1.0, 0.45)
 @export var mfd_dim := Color(0.12, 0.42, 0.18)
 @export var mfd_bg := Color(0.02, 0.05, 0.03)
+@export_subgroup("Dark analog cockpit")
+@export var dark_plate := Color(0.14, 0.16, 0.14)
+@export var dark_plate_light := Color(0.27, 0.3, 0.27)
+@export var dark_plate_dark := Color(0.05, 0.06, 0.05)
+@export var amber := Color(1.0, 0.7, 0.25)
 
 @export_group("Layout")
 @export var gauge_radius := 25.0
@@ -55,12 +62,18 @@ func _draw() -> void:
 	if aircraft != null and aircraft.data.cockpit_style == 1:
 		_draw_glass()
 		return
-	_draw_plate(Rect2(Vector2.ZERO, size))
+	var dark := aircraft != null and aircraft.data.cockpit_style == 2
+	if dark:
+		_draw_plate(Rect2(Vector2.ZERO, size), dark_plate, dark_plate_light, dark_plate_dark)
+	else:
+		_draw_plate(Rect2(Vector2.ZERO, size), plate_color, plate_light, plate_dark)
 	if aircraft == null:
 		return
 	_draw_airspeed(gauge_centres[0])
 	_draw_altimeter(gauge_centres[1])
 	_draw_vsi(gauge_centres[2])
+	if dark:
+		_draw_amber_strip(Rect2(8, 76, 170, 12))
 	_draw_throttle(Vector2(190, 8))
 	_draw_fuel(Vector2(211, 8))
 	_draw_status(Vector2(226, 8))
@@ -69,13 +82,21 @@ func _draw() -> void:
 
 # --- Plate ---
 
-func _draw_plate(r: Rect2) -> void:
-	draw_rect(r, plate_dark)
-	draw_rect(r.grow(-1), plate_light)
-	draw_rect(Rect2(r.position + Vector2(2, 2), r.size - Vector2(3, 3)), plate_color)
+func _draw_plate(r: Rect2, fill: Color, light: Color, dark: Color) -> void:
+	draw_rect(r, dark)
+	draw_rect(r.grow(-1), light)
+	draw_rect(Rect2(r.position + Vector2(2, 2), r.size - Vector2(3, 3)), fill)
 	for c in [Vector2(4, 4), Vector2(r.size.x - 5, 4), Vector2(4, r.size.y - 5), Vector2(r.size.x - 5, r.size.y - 5)]:
-		draw_rect(Rect2(c, Vector2(2, 2)), plate_dark)
-		draw_rect(Rect2(c, Vector2(1, 1)), plate_light)
+		draw_rect(Rect2(c, Vector2(2, 2)), dark)
+		draw_rect(Rect2(c, Vector2(1, 1)), light)
+
+
+## Mirage: amber digital strip with Mach number and G.
+func _draw_amber_strip(r: Rect2) -> void:
+	draw_rect(r, Color.BLACK)
+	draw_rect(r, dark_plate_light, false)
+	_text(Vector2(r.position.x + 4, r.position.y + 9), "MACH %.2f" % (aircraft.speed_kt / 661.5), amber)
+	_text_right(Vector2(r.end.x - 4, r.position.y + 9), "G %+.1f" % aircraft.g_load, amber)
 
 
 # --- Gauges ---
@@ -84,7 +105,7 @@ func _gauge_face(c: Vector2, label: String) -> void:
 	draw_circle(c, gauge_radius + 2, plate_dark)
 	draw_circle(c, gauge_radius + 1, Color(0.16, 0.16, 0.17))
 	draw_circle(c, gauge_radius - 1, face_color)
-	_text_centered(c + Vector2(0, gauge_radius + 10), label, label_color)
+	_text_centered(c + Vector2(0, gauge_radius + 10), label, _lc())
 
 
 func _tick(c: Vector2, ang: float, r_in: float, r_out: float, col: Color, w := 1.0) -> void:
@@ -199,7 +220,7 @@ func _draw_status(p: Vector2) -> void:
 		gear = lamp_amber if a.gear_in_transit else (lamp_green if a.gear_down else lamp_off)
 	_lamp(p + Vector2(0, 12), gear, "GEAR")
 
-	_text(p + Vector2(0, 32), "FLAPS", label_color)
+	_text(p + Vector2(0, 32), "FLAPS", _lc())
 	for i in Aircraft.FLAP_NAMES.size():
 		var on := a.flap_setting == i
 		var moving := on and not is_equal_approx(a.flap_pos, float(i))
@@ -354,7 +375,12 @@ func _draw_glass_status(p: Vector2) -> void:
 
 ## Label colour for the current panel style (dark text on grey, light on black).
 func _lc() -> Color:
-	return glass_label if aircraft != null and aircraft.data.cockpit_style == 1 else label_color
+	if aircraft == null:
+		return label_color
+	match aircraft.data.cockpit_style:
+		1: return glass_label
+		2: return amber
+	return label_color
 
 
 func _text_right(baseline_right: Vector2, s: String, col: Color, font_size := 8) -> void:

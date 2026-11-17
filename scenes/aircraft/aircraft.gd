@@ -70,6 +70,8 @@ var _prop_angle := 0.0
 var elevator := 0.0
 ## Night flight: draw nav/strobe/landing lights (set by the flight scene).
 var night_lights := false
+## True from lift-off until the takeoff pitch limit height (see AircraftData).
+var takeoff_climb := false
 ## G felt by the pilot (along the seat axis, 1 = level flight), smoothed.
 var g_load := 1.0
 ## 0..1 screen effects driven by g_load (see AircraftData "Pilot G effects").
@@ -150,6 +152,7 @@ func reset_state() -> void:
 	gear_down = true
 	gear_pos = 1.0
 	g_load = 1.0
+	takeoff_climb = false
 	blackout = 0.0
 	redout = 0.0
 	_prev_vel = Vector2.ZERO
@@ -252,6 +255,12 @@ func _update_pitch(delta: float) -> void:
 		# No attitude limits in the air: loops, vertical climbs and inverted
 		# flight are all possible; the aerodynamics decide what happens.
 		pitch = wrapf(pitch, -PI, PI)
+		if takeoff_climb:
+			if altitude_ft > data.takeoff_limit_height_ft:
+				takeoff_climb = false
+			elif pitch > deg_to_rad(data.takeoff_pitch_limit_deg):
+				pitch = deg_to_rad(data.takeoff_pitch_limit_deg)
+				pitch_rate = minf(pitch_rate, 0.0)
 
 
 func _integrate(delta: float) -> void:
@@ -281,6 +290,7 @@ func _integrate(delta: float) -> void:
 	if on_ground:
 		if force.y > 0.0:
 			on_ground = false
+			takeoff_climb = true
 			lifted_off.emit()
 		else:
 			# Ground pushes back; friction and brakes scale with weight on the wheels.

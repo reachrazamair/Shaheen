@@ -48,6 +48,15 @@ CONFIGS = {
         "elevator": {"poly": [(3, 111), (79, 110), (79, 119), (42, 126), (10, 127), (3, 125)],
                      "fill": (66, 70, 76, 255), "fill_min_x": 13},
     },
+    "mirage5": {
+        "src": "docs/reference/mirage5_sprite_source.png",
+        "display_width": 118,  # world px; 15.5 m, about the F-16's length
+        "gear_regions": [],    # art shows the gear retracted: drawn in code
+        "prop": None,
+        "points": {"nozzle": (45, 190), "main_gear_top": (300, 230), "nose_gear_top": (575, 216),
+                   "wheel_bottom": (0, 292), "light_nav_near": (150, 221), "light_nav_far": (172, 214),
+                   "light_tail": (40, 150), "light_beacon": (26, 46), "light_landing": (580, 270)},
+    },
 }
 
 

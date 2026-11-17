@@ -7,8 +7,9 @@ const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
 
 ## Card text per aircraft (same order as GameState.AIRCRAFT).
 const AIRCRAFT_BLURB := [
-	"TRAINER. SLOW AND FORGIVING.",
-	"FIGHTER. FAST, AFTERBURNER, HARD.",
+	"TRAINER",
+	"MULTI-ROLE",
+	"STRIKE FIGHTER",
 ]
 
 var _name_edit: LineEdit
@@ -124,7 +125,7 @@ func _build() -> void:
 	go_row.add_child(_fly)
 	box.add_child(go_row)
 
-	box.add_child(_label("ROUTE: RISALPUR TO PESHAWAR", 8, Color(0.1, 0.2, 0.25)))
+	box.add_child(_label("ROUTE: RISALPUR TO MASROOR, KARACHI", 8, Color(0.1, 0.2, 0.25)))
 
 	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   R RESTART", 8, Color.WHITE)
 	add_child(keys)
@@ -140,7 +141,7 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 	var card := Button.new()
 	card.toggle_mode = true
 	card.button_group = group
-	card.custom_minimum_size = Vector2(200, 70)
+	card.custom_minimum_size = Vector2(140, 70)
 	card.button_pressed = path == GameState.aircraft_path
 	card.toggled.connect(func(on: bool) -> void:
 		if on:

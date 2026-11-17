@@ -6,7 +6,7 @@
 
 [resource]
 script = ExtResource("1_data")
-display_name = "F-16 Fighting Falcon"
+display_name = "F-16D Fighting Falcon"
 mass_kg = 12000.0
 max_thrust_n = 76000.0
 thrust_zero_speed_kt = 0.0
@@ -41,6 +41,8 @@ pitch_rate_deg_s = 30.0
 pitch_accel_deg_s2 = 300.0
 rotate_speed_kt = 145.0
 rotate_start_fraction = 0.7
+takeoff_pitch_limit_deg = 15.0
+takeoff_limit_height_ft = 500.0
 max_ground_pitch_deg = 12.0
 rolling_friction = 0.02
 brake_strength = 0.45

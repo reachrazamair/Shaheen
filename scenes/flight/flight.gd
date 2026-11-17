@@ -20,7 +20,7 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 @export var departure: BaseData
 @export var destination: BaseData
 ## Distance between the two runway thresholds. Compressed so a trainer flight
-## takes about a minute and a half (real Risalpur-Peshawar is ~45 km).
+## takes about a minute and a half (the real distance to Masroor, Karachi, is ~1,200 km).
 @export var route_distance_m := 5000.0
 ## Sky gradient tint at night (top dark navy, faint glow at the horizon).
 @export var night_sky_tint := Color(0.07, 0.09, 0.2)
@@ -40,6 +40,7 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 @onready var mountains: Node2D = $Mountains
 @onready var hills: Node2D = $Hills
 @onready var trees: Node2D = $Trees
+@onready var landmarks: Node2D = $Landmarks
 
 var state := State.PREFLIGHT
 var flight_time_s := 0.0
@@ -57,6 +58,13 @@ func _ready() -> void:
 	destination_base.position.x = route_distance_m * WorldScale.PX_PER_M
 	ground.end_m = route_distance_m + destination.runway_length_m + 3000.0
 	aircraft.place_at(spawn_x_m)
+	landmarks.setup(destination.landmarks, route_distance_m)
+	ground.grass_color = departure.ground_color
+	ground.tuft_color = departure.ground_tuft_color
+	ground.end_grass_color = destination.ground_color
+	ground.end_tuft_color = destination.ground_tuft_color
+	ground.blend_from_m = route_distance_m * 0.3
+	ground.blend_to_m = route_distance_m * 0.75
 	if GameState.night:
 		_setup_night()
 	camera.snap()

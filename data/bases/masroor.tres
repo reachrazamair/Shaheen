@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BaseData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/base_data.gd" id="1_base"]
+
+[resource]
+script = ExtResource("1_base")
+display_name = "PAF Base Masroor"
+short_name = "MASROOR"
+runway_length_m = 1400.0
+hangar_count = 4
+admin_block_length_m = 80.0
+admin_block_floors = 2
+tower_height_m = 28.0
+building_color = Color(0.88, 0.84, 0.74, 1)
+hangar_color = Color(0.62, 0.62, 0.58, 1)
+roof_color = Color(0.5, 0.44, 0.38, 1)
+sky_tint = Color(1.0, 0.96, 0.9, 1)
+mountain_color = Color(0.68, 0.64, 0.62, 1)
+mountain_height = 0.35
+hill_color = Color(0.74, 0.66, 0.48, 1)
+tree_color = Color(0.45, 0.48, 0.3, 1)
+ground_color = Color(0.72, 0.64, 0.46, 1)
+ground_tuft_color = Color(0.6, 0.55, 0.36, 1)
+landmarks = PackedStringArray("sea", "port_cranes", "teen_talwar", "bahria_icon", "mazar_e_quaid", "masjid_e_tooba", "skyline")

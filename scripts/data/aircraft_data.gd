@@ -101,6 +101,10 @@ extends Resource
 ## Holding nose-up on the takeoff roll starts lifting the nose from this
 ## fraction of rotate speed (fully free at rotate speed).
 @export var rotate_start_fraction := 0.7
+## Takeoff protection: from lift-off until takeoff_limit_height_ft the nose
+## can't go above this pitch (no hanging vertical with no speed). Free after.
+@export var takeoff_pitch_limit_deg := 20.0
+@export var takeoff_limit_height_ft := 500.0
 ## Max nose-up on the ground before the tail would strike.
 @export var max_ground_pitch_deg := 12.0
 
@@ -165,7 +169,7 @@ extends Resource
 @export_group("Cockpit")
 ## Instrument panel look: Analog = grey panel with round dials (trainers),
 ## Glass = dark jet cockpit with green digital screens (fighters).
-@export_enum("Analog", "Glass") var cockpit_style := 0
+@export_enum("Analog", "Glass", "Dark analog") var cockpit_style := 0
 
 @export_group("Look")
 ## Real-world size in metres; drives the placeholder shape and sprite scale.

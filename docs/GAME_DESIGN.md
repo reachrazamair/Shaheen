@@ -8,6 +8,8 @@ You are a PAF pilot, starting as an Aviation Cadet: the player enters their name
 
 **Instructor tone (owner decision):** the instructor is a real, hard flight instructor: aggressive, angry, hyper, impatient, short shouted lines, with natural Urdu where an instructor would use it ("Jaldi karo!", "Kya kar rahe ho?", "Abhi!", "Aram se", "Dhyan se", "Shabash", "Phir se karo"). Nothing corny, no jokes, no profanity.
 
+**Background landmarks:** each base can show real local landmarks in the distance as you fly in (scenery only, never interactive). Karachi (Masroor): the sea and port, Teen Talwar, Bahria Icon Tower, Mazar-e-Quaid, Masjid-e-Tooba. More cities later.
+
 **Day or night** is chosen on the start screen. Night: dark world, stars, runway edge/threshold/end lights and sequenced approach lights, lit tower and windows, aircraft nav lights (green near wingtip, red far wingtip), white tail light, anti-collision strobe and a landing light on the nose gear (off when the gear is up). Each mission: you're on the runway at one PAF base, you start up, take off, fly to another named PAF base, and land. Landing well (gentle touchdown, gear down, on the runway, not wasting fuel) earns pay and reputation. Pay unlocks better aircraft. You progress from basic trainers to front-line fighters.
 
 The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
