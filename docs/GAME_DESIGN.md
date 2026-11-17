@@ -15,7 +15,7 @@ The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
 - 2D side view. The plane flies left to right across a scrolling landscape (similar layout to Air Offense Command).
 - Pixel art at a 640×360 internal resolution, scaled up crisply.
 - Parallax backgrounds per base and region. Time of day and weather tint the scene (later).
-- Screen layout like TU-95 (see `reference/tu95_layout_reference.png` and the layout section in `CLAUDE.md`): cockpit gauge panel top-left, flight phase box top-centre, instructor/radio message box with portrait top-right, zoomed-out world below with a small plane and big base buildings.
+- Screen layout like TU-95 (see `reference/tu95_layout_reference.png` and the layout section in `CLAUDE.md`): cockpit gauge panel top-left (different per aircraft type), positional radar with the flight phase top-centre, instructor/radio message box with portrait top-right, zoomed-out world below with a small plane and big base buildings.
 - Eventually each aircraft gets its own cockpit panel (Mushshak gauges look different from F-16 instruments). The prototype uses one shared panel.
 
 ## 3. Flight model (arcade)

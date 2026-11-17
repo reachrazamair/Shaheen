@@ -3,8 +3,11 @@ extends Control
 ## (airspeed, altimeter, vertical speed), throttle lever, fuel gauge,
 ## engine/gear/flap lights and a row of warning lights.
 ## Everything is drawn in code as placeholder pixel art at final size; gauge
-## ranges come from the aircraft's data. One shared panel for all aircraft
-## in the prototype (per-aircraft cockpits come later).
+## ranges come from the aircraft's data.
+## Two looks, picked by AircraftData.cockpit_style:
+##  - Analog (trainers): grey metal plate with round dials.
+##  - Glass (fighters, F-16): dark panel with two green digital screens
+##    (speed tape + Mach, altitude tape + vertical speed bar), G readout.
 
 var aircraft: Aircraft
 
@@ -20,6 +23,14 @@ var aircraft: Aircraft
 @export var lamp_green := Color(0.3, 0.95, 0.35)
 @export var lamp_amber := Color(1.0, 0.72, 0.15)
 @export var lamp_red := Color(1.0, 0.22, 0.18)
+@export_subgroup("Glass cockpit")
+@export var glass_plate := Color(0.17, 0.18, 0.2)
+@export var glass_plate_light := Color(0.3, 0.31, 0.34)
+@export var glass_plate_dark := Color(0.08, 0.08, 0.09)
+@export var glass_label := Color(0.7, 0.72, 0.74)
+@export var mfd_green := Color(0.35, 1.0, 0.45)
+@export var mfd_dim := Color(0.12, 0.42, 0.18)
+@export var mfd_bg := Color(0.02, 0.05, 0.03)
 
 @export_group("Layout")
 @export var gauge_radius := 25.0
@@ -41,6 +52,9 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	if aircraft != null and aircraft.data.cockpit_style == 1:
+		_draw_glass()
+		return
 	_draw_plate(Rect2(Vector2.ZERO, size))
 	if aircraft == null:
 		return
@@ -148,8 +162,8 @@ func _draw_throttle(p: Vector2) -> void:
 	var hy := p.y + (h - 6) * (1.0 - aircraft.throttle)
 	draw_rect(Rect2(p.x - 3, hy, 14, 6), Color(0.12, 0.12, 0.12))
 	draw_rect(Rect2(p.x - 2, hy + 1, 12, 1), Color(0.4, 0.4, 0.4))
-	_text_centered(Vector2(p.x + 4, p.y + h + 10), "THR", label_color)
-	_text_centered(Vector2(p.x + 4, p.y + h + 18), str(roundi(aircraft.throttle * 100.0)), label_color)
+	_text_centered(Vector2(p.x + 4, p.y + h + 10), "THR", _lc())
+	_text_centered(Vector2(p.x + 4, p.y + h + 18), str(roundi(aircraft.throttle * 100.0)), _lc())
 
 
 func _draw_fuel(p: Vector2) -> void:
@@ -160,7 +174,7 @@ func _draw_fuel(p: Vector2) -> void:
 	draw_rect(Rect2(p.x + 1, p.y + 1 + (h - 2) * (1.0 - frac), 6, (h - 2) * frac), col)
 	for i in range(1, 4):
 		draw_rect(Rect2(p.x, p.y + h * i / 4.0, 3, 1), plate_light)
-	_text_centered(Vector2(p.x + 4, p.y + h + 10), "FUEL", label_color)
+	_text_centered(Vector2(p.x + 4, p.y + h + 10), "FUEL", _lc())
 
 
 # --- Status lights ---
@@ -168,7 +182,7 @@ func _draw_fuel(p: Vector2) -> void:
 func _lamp(p: Vector2, col: Color, label: String) -> void:
 	draw_rect(Rect2(p, Vector2(7, 6)), Color.BLACK)
 	draw_rect(Rect2(p + Vector2(1, 1), Vector2(5, 4)), col)
-	_text(p + Vector2(10, 6), label, label_color)
+	_text(p + Vector2(10, 6), label, _lc())
 
 
 func _draw_status(p: Vector2) -> void:
@@ -220,7 +234,135 @@ func _draw_warnings(p: Vector2) -> void:
 				Color.BLACK if lit else Color(0.42, 0.42, 0.42))
 
 
+# --- Glass cockpit (fighters) ---
+
+func _draw_glass() -> void:
+	var r := Rect2(Vector2.ZERO, size)
+	draw_rect(r, glass_plate_dark)
+	draw_rect(r.grow(-1), glass_plate_light)
+	draw_rect(Rect2(2, 2, size.x - 3, size.y - 3), glass_plate)
+	# Two screens, then throttle, fuel and status on the right.
+	var speed_mfd := Rect2(6, 6, 80, 82)
+	var alt_mfd := Rect2(92, 6, 80, 82)
+	_mfd_frame(speed_mfd)
+	_mfd_frame(alt_mfd)
+	_draw_speed_tape(speed_mfd.grow(-4))
+	_draw_alt_tape(alt_mfd.grow(-4))
+	_draw_throttle(Vector2(180, 8))
+	_draw_fuel(Vector2(200, 8))
+	_draw_glass_status(Vector2(218, 8))
+	_draw_warnings(Vector2(6, size.y - 20))
+
+
+## Screen bezel with the row of push buttons above and below (like an MFD).
+func _mfd_frame(m: Rect2) -> void:
+	draw_rect(m, glass_plate_dark)
+	draw_rect(m.grow(-1), Color(0.24, 0.25, 0.27))
+	for i in 5:
+		var bx := m.position.x + 8 + i * (m.size.x - 16) / 4.0 - 3
+		draw_rect(Rect2(bx, m.position.y - 0, 6, 2), Color(0.42, 0.43, 0.45))
+		draw_rect(Rect2(bx, m.end.y - 2, 6, 2), Color(0.42, 0.43, 0.45))
+	draw_rect(m.grow(-4), mfd_bg)
+
+
+## A vertical tape: ticks scroll past a fixed box showing the current value.
+## step = value between small ticks, label_every = small ticks per label.
+func _tape(s: Rect2, value: float, units_per_px: float, step: float, label_every: int,
+		fmt: Callable, box_text: String) -> void:
+	var cy := s.get_center().y
+	var x := s.position.x + 4
+	var first := floorf((value - (s.size.y * 0.5) * units_per_px) / step) * step
+	var v := first
+	while v <= value + (s.size.y * 0.5) * units_per_px:
+		var y := roundf(cy - (v - value) / units_per_px)
+		if y > s.position.y + 1 and y < s.end.y - 1 and v >= 0.0:
+			var major := is_zero_approx(fmod(roundf(v / step), float(label_every)))
+			draw_rect(Rect2(x, y, 6 if major else 3, 1), mfd_green if major else mfd_dim)
+			if major and absf(y - cy) > 7:
+				_text(Vector2(x + 9, y + 3), fmt.call(v), mfd_dim.lightened(0.3))
+		v += step
+	# Current value box.
+	var box := Rect2(s.position.x + 1, cy - 6, s.size.x - 14, 12)
+	draw_rect(box, mfd_bg)
+	draw_rect(box, mfd_green, false)
+	draw_colored_polygon(PackedVector2Array([box.position + Vector2(box.size.x, 3), box.position + Vector2(box.size.x + 4, 6), box.position + Vector2(box.size.x, 9)]), mfd_green)
+	_text(Vector2(box.position.x + 4, cy + 3), box_text, mfd_green)
+
+
+func _draw_speed_tape(s: Rect2) -> void:
+	var kt := aircraft.speed_kt
+	_text(Vector2(s.position.x + 2, s.position.y + 7), "KTS", mfd_green)
+	var tape := Rect2(s.position.x, s.position.y + 9, s.size.x, s.size.y - 20)
+	_tape(tape, kt, 2.0, 10.0, 5, func(v: float) -> String: return str(roundi(v)), str(roundi(kt)))
+	# Stall speed marker: red bar on the tape edge below stall speed.
+	var cy := tape.get_center().y
+	var stall_y := cy - (aircraft.data.stall_speed_kt - kt) / 2.0
+	var top := clampf(stall_y, tape.position.y, tape.end.y)
+	if top < tape.end.y:
+		draw_rect(Rect2(tape.position.x + 1, top, 2, tape.end.y - top), lamp_red)
+	var mach := kt / 661.5
+	_text(Vector2(s.position.x + 2, s.end.y - 2), "M %.2f" % mach, mfd_green)
+	var g := aircraft.lift_ratio * cos(aircraft.pitch) if not aircraft.on_ground else 1.0
+	_text_right(Vector2(s.end.x - 2, s.position.y + 7), "G %.1f" % g, mfd_green)
+
+
+func _draw_alt_tape(s: Rect2) -> void:
+	var alt := maxf(aircraft.altitude_ft, 0.0)
+	_text(Vector2(s.position.x + 2, s.position.y + 7), "ALT", mfd_green)
+	var tape := Rect2(s.position.x, s.position.y + 9, s.size.x - 8, s.size.y - 20)
+	_tape(tape, alt, 20.0, 100.0, 5, func(v: float) -> String: return str(roundi(v)), str(roundi(alt / 10.0) * 10))
+	# Vertical speed bar on the right edge: grows up for climb, down for descent.
+	var vs := aircraft.vertical_speed_fpm
+	var bar_x := s.end.x - 4
+	var cy := tape.get_center().y
+	var half := tape.size.y * 0.5
+	draw_rect(Rect2(bar_x, tape.position.y, 1, tape.size.y), mfd_dim)
+	draw_rect(Rect2(bar_x - 2, cy, 5, 1), mfd_dim)
+	var len_px := clampf(vs / aircraft.data.gauge_vsi_max_fpm, -1.0, 1.0) * half
+	draw_rect(Rect2(bar_x - 1, minf(cy, cy - len_px), 3, absf(len_px)), mfd_green)
+	_text(Vector2(s.position.x + 2, s.end.y - 2), "VS %+d" % (roundi(vs / 10.0) * 10), mfd_green)
+
+
+func _draw_glass_status(p: Vector2) -> void:
+	var a := aircraft
+	var eng := lamp_off
+	if a.engine_on:
+		eng = lamp_green if a.engine_rpm >= 1.0 else lamp_amber
+	elif a.engine_rpm > 0.0:
+		eng = lamp_amber
+	_lamp(p, eng, "ENG")
+	_text(p + Vector2(10, 14), "%d%%" % roundi(a.engine_rpm * 100.0), glass_label)
+
+	# Landing gear: three lights (nose, left, right) like a real jet.
+	_text(p + Vector2(0, 26), "GEAR", glass_label)
+	var gear_col := lamp_amber if a.gear_in_transit else (lamp_green if a.gear_down else lamp_off)
+	for i in 3:
+		var gp := p + Vector2(i * 9, 29) + (Vector2(0, -3) if i == 1 else Vector2.ZERO) + Vector2(0, 3)
+		draw_rect(Rect2(gp, Vector2(7, 6)), Color.BLACK)
+		draw_rect(Rect2(gp + Vector2(1, 1), Vector2(5, 4)), gear_col)
+
+	_text(p + Vector2(0, 50), "FLAPS", glass_label)
+	var flap: String = Aircraft.FLAP_NAMES[a.flap_setting]
+	var moving := not is_equal_approx(a.flap_pos, float(a.flap_setting))
+	var fr := Rect2(p + Vector2(0, 53), Vector2(26, 10))
+	draw_rect(fr, mfd_bg)
+	draw_rect(fr, glass_plate_light, false)
+	_text_centered(Vector2(fr.get_center().x, fr.position.y + 8), flap, lamp_amber if moving else mfd_green)
+
+
 # --- Text helpers ---
+
+## Label colour for the current panel style (dark text on grey, light on black).
+func _lc() -> Color:
+	return glass_label if aircraft != null and aircraft.data.cockpit_style == 1 else label_color
+
+
+func _text_right(baseline_right: Vector2, s: String, col: Color, font_size := 8) -> void:
+	var w := _font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	draw_string(_font, Vector2(roundf(baseline_right.x - w), baseline_right.y), s,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+
+
 
 func _text(baseline_left: Vector2, s: String, col: Color, font_size := 8) -> void:
 	draw_string(_font, baseline_left, s, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)

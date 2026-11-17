@@ -1,10 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scenes/ui/instrument_panel.gd" id="2_panel"]
-[ext_resource type="Script" path="res://scenes/ui/phase_box.gd" id="3_phase"]
+[ext_resource type="Script" path="res://scenes/ui/radar.gd" id="3_radar"]
 [ext_resource type="Script" path="res://scenes/ui/message_box.gd" id="4_msg"]
-[ext_resource type="Script" path="res://scenes/ui/route_bar.gd" id="5_route"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -19,25 +18,15 @@ offset_bottom = 118.0
 mouse_filter = 2
 script = ExtResource("2_panel")
 
-[node name="PhaseBox" type="Control" parent="."]
+[node name="Radar" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 278.0
+offset_left = 276.0
 offset_top = 4.0
-offset_right = 416.0
-offset_bottom = 52.0
+offset_right = 420.0
+offset_bottom = 80.0
 mouse_filter = 2
-script = ExtResource("3_phase")
-
-[node name="RouteBar" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 0
-offset_left = 278.0
-offset_top = 55.0
-offset_right = 416.0
-offset_bottom = 75.0
-mouse_filter = 2
-script = ExtResource("5_route")
+script = ExtResource("3_radar")
 
 [node name="MessageBox" type="Control" parent="."]
 layout_mode = 3

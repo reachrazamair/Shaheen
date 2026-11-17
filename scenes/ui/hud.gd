@@ -1,14 +1,14 @@
 extends CanvasLayer
-## Cockpit HUD: instrument panel (top-left), flight phase box (top-centre),
+## Cockpit HUD: instrument panel (top-left), positional radar with the flight
+## phase (top-centre),
 ## instructor message box (top-right), plus a hidden debug readout (F1).
 ## The instructor messages double as a tutorial so friends can play without
 ## being told the controls.
 
 @onready var panel: Control = $InstrumentPanel
-@onready var phase_box: Control = $PhaseBox
+@onready var radar: Control = $Radar
 @onready var messages: Control = $MessageBox
 @onready var debug_label: Label = $DebugLabel
-@onready var route_bar: Control = $RouteBar
 @onready var cadet_tag: Label = $CadetTag
 
 ## Seconds between repeated STALL callouts.
@@ -33,11 +33,13 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	departure = from_base
 	destination = to_base
 	route_distance_m = distance_m
-	route_bar.to_name = to_base.short_name
-	route_bar.total_m = distance_m
+	radar.to_name = to_base.short_name
+	radar.route_m = distance_m
+	radar.departure_runway_m = from_base.runway_length_m
+	radar.destination_runway_m = to_base.runway_length_m
 	cadet_tag.text = GameState.cadet_title()
 	panel.aircraft = a
-	phase_box.aircraft = a
+	radar.aircraft = a
 	_prev_gear_down = a.gear_down
 	_prev_flap = a.flap_setting
 	a.lifted_off.connect(_on_lifted_off)
@@ -55,8 +57,8 @@ func _process(delta: float) -> void:
 	if aircraft == null:
 		return
 	var remaining := distance_to_destination()
-	route_bar.remaining_m = remaining
-	phase_box.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
+	radar.remaining_m = remaining
+	radar.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
 	_instructor(delta)
 	if debug_label.visible:
 		_update_debug()

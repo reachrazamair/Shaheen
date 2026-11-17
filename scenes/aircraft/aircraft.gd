@@ -66,6 +66,13 @@ var _prop_angle := 0.0
 var _time := 0.0
 ## Wreckage pieces after a crash: {src (texture Rect2), pos, vel, rot, spin, resting}
 var _fragments: Array = []
+## Node transform at the previous and latest physics tick. Each rendered frame
+## draws the aircraft between the two, so fast jets move smoothly even when the
+## screen refreshes faster than the 60 Hz physics.
+var _prev_px := Vector2.ZERO
+var _prev_rot := 0.0
+var _cur_px := Vector2.ZERO
+var _cur_rot := 0.0
 
 var speed_kt: float:
 	get: return velocity_m.length() * WorldScale.MS_TO_KT
@@ -91,6 +98,8 @@ var afterburner: float:
 
 func _ready() -> void:
 	assert(data != null, "Aircraft needs an AircraftData resource")
+	# Runs before the camera (-5) and scenery (0) each frame.
+	process_priority = -10
 	reset_state()
 	queue_redraw()
 
@@ -105,7 +114,7 @@ func set_data(d: AircraftData) -> void:
 func place_at(x_m: float) -> void:
 	reset_state()
 	pos_m = Vector2(x_m, 0.0)
-	_sync_node()
+	_sync_node(true)
 
 
 func reset_state() -> void:
@@ -127,7 +136,7 @@ func reset_state() -> void:
 	flap_direction = -1
 	gear_down = true
 	gear_pos = 1.0
-	_sync_node()
+	_sync_node(true)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -201,6 +210,10 @@ func _update_pitch(delta: float) -> void:
 	var stick := Input.get_axis("pitch_down", "pitch_up") if controls_enabled else 0.0
 	var target_rate := stick \
 			* deg_to_rad(data.pitch_rate_deg_s) * authority
+	if data.pitch_g_limit > 0.0 and not on_ground:
+		# Fly-by-wire: the faster you go, the gentler the nose moves.
+		var max_rate := data.pitch_g_limit * WorldScale.GRAVITY / maxf(speed, 1.0)
+		target_rate = clampf(target_rate, -max_rate, max_rate)
 	pitch_rate = move_toward(pitch_rate, target_rate, deg_to_rad(data.pitch_accel_deg_s2) * delta)
 	if stalled:
 		# The nose drops on its own; the player can push it down faster but not hold it up.
@@ -389,9 +402,25 @@ func _update_fragments(delta: float) -> void:
 				f.resting = true
 
 
-func _sync_node() -> void:
-	position = Vector2(pos_m.x, -pos_m.y) * WorldScale.PX_PER_M
-	rotation = -pitch
+## Called after each physics step (teleport = no smoothing from the old spot).
+func _sync_node(teleport := false) -> void:
+	_prev_px = _cur_px
+	_prev_rot = _cur_rot
+	_cur_px = Vector2(pos_m.x, -pos_m.y) * WorldScale.PX_PER_M
+	_cur_rot = -pitch
+	if teleport:
+		_prev_px = _cur_px
+		_prev_rot = _cur_rot
+	position = _cur_px
+	rotation = _cur_rot
+
+
+func _process(_delta: float) -> void:
+	if crashed:
+		return
+	var f := Engine.get_physics_interpolation_fraction()
+	position = _prev_px.lerp(_cur_px, f)
+	rotation = lerp_angle(_prev_rot, _cur_rot, f)
 
 
 # --- Drawing ---
@@ -483,20 +512,38 @@ func _draw_code_gear() -> void:
 		draw_circle(Vector2(gx, wy), r * 0.45, Color(0.6, 0.62, 0.66))
 
 
-## Flickering afterburner: orange outer flame, yellow-white core, blue shock diamonds.
+## Afterburner: a big flickering plume out of the nozzle. Red-orange outer
+## flame, yellow middle, white-hot core, blue shock diamonds and a nozzle glow.
+## Length grows with how far the throttle is into the afterburner range.
 func _draw_afterburner(strength: float) -> void:
 	var n := data.sprite_nozzle
-	var flicker := 0.85 + 0.15 * sin(_time * 47.0) + 0.05 * sin(_time * 113.0)
-	var length := data.afterburner_flame_length * (0.5 + 0.5 * strength) * flicker
-	var h := 14.0
-	draw_colored_polygon(PackedVector2Array([n + Vector2(6, -h * 0.5), n + Vector2(-length, 0), n + Vector2(6, h * 0.5)]),
-			Color(1.0, 0.5, 0.1, 0.75))
-	draw_colored_polygon(PackedVector2Array([n + Vector2(6, -h * 0.3), n + Vector2(-length * 0.7, 0), n + Vector2(6, h * 0.3)]),
-			Color(1.0, 0.85, 0.45, 0.9))
-	for k in 3:
-		var d := n + Vector2(-length * (0.2 + 0.18 * k), 0)
-		draw_colored_polygon(PackedVector2Array([d + Vector2(4, 0), d + Vector2(0, -3), d + Vector2(-4, 0), d + Vector2(0, 3)]),
-				Color(0.6, 0.8, 1.0, 0.8))
+	var flicker := 0.88 + 0.08 * sin(_time * 47.0) + 0.04 * sin(_time * 113.0)
+	var length := data.afterburner_flame_length * (0.55 + 0.45 * strength) * flicker
+	var h := data.afterburner_flame_width
+	var wob := 1.5 * sin(_time * 71.0)
+	var layers := [
+		[1.25, 1.00, Color(0.95, 0.25, 0.08, 0.35)],   # red haze
+		[1.00, 0.85, Color(1.0, 0.5, 0.1, 0.8)],       # orange
+		[0.70, 0.62, Color(1.0, 0.82, 0.35, 0.9)],     # yellow
+		[0.38, 0.35, Color(1.0, 0.98, 0.85, 1.0)],     # white-hot core
+	]
+	for l in layers:
+		var hw: float = h * 0.5 * l[0]
+		var fl: float = length * l[1]
+		draw_colored_polygon(PackedVector2Array([
+			n + Vector2(6, -hw), n + Vector2(-fl * 0.35, -hw * 1.1 + wob),
+			n + Vector2(-fl, wob * 2.0),
+			n + Vector2(-fl * 0.35, hw * 1.1 + wob), n + Vector2(6, hw),
+		]), l[2])
+	# Shock diamonds.
+	var d_size := h * 0.22
+	for k in 4:
+		var d := n + Vector2(-length * (0.12 + 0.13 * k), 0)
+		var s := d_size * (1.0 - 0.15 * k)
+		draw_colored_polygon(PackedVector2Array([d + Vector2(s * 1.4, 0), d + Vector2(0, -s), d + Vector2(-s * 1.4, 0), d + Vector2(0, s)]),
+				Color(0.65, 0.85, 1.0, 0.85))
+	# Glow around the nozzle.
+	draw_circle(n + Vector2(-2, 0), h * 0.75, Color(1.0, 0.6, 0.2, 0.25 * strength + 0.1))
 
 
 func _draw_placeholder(l: float, h: float) -> void:

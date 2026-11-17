@@ -92,6 +92,10 @@ extends Resource
 @export var airbrake_drag := 1.2
 
 @export_group("Pitch")
+## Fly-by-wire smoothing: at high speed the pitch rate is capped so the flight
+## path never turns harder than this many G (0 = off, pure stick rate).
+## Makes fast jets feel smooth instead of twitchy.
+@export var pitch_g_limit := 0.0
 ## Max nose rotation rate at full control authority.
 @export var pitch_rate_deg_s := 25.0
 ## How quickly the pitch rate builds/settles (smoothing; higher = snappier).
@@ -132,6 +136,11 @@ extends Resource
 ## ...and is gone this many metres higher (soft ceiling).
 @export var ceiling_fade_m := 1000.0
 
+@export_group("Cockpit")
+## Instrument panel look: Analog = grey panel with round dials (trainers),
+## Glass = dark jet cockpit with green digital screens (fighters).
+@export_enum("Analog", "Glass") var cockpit_style := 0
+
 @export_group("Look")
 ## Real-world size in metres; drives the placeholder shape and sprite scale.
 @export var length_m := 7.0
@@ -162,6 +171,8 @@ extends Resource
 ## Engine nozzle (afterburner flame starts here, pointing back) and flame length.
 @export var sprite_nozzle := Vector2.ZERO
 @export var afterburner_flame_length := 60.0
+## Flame height at the nozzle (texture px); it widens a little further back.
+@export var afterburner_flame_width := 14.0
 ## Wing trailing edge, where the flap hangs from (flap length 0 = don't draw).
 @export var sprite_flap_hinge := Vector2(130, 40)
 @export var sprite_flap_length := 18.0

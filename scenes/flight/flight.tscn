@@ -83,9 +83,6 @@ script = ExtResource("2_ground")
 
 [node name="Camera" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
 limit_bottom = 60
-process_callback = 0
-position_smoothing_enabled = true
-position_smoothing_speed = 6.0
 script = ExtResource("5_camera")
 target = NodePath("../Aircraft")
 

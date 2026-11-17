@@ -18,6 +18,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.8 Second aircraft (F-16) and aircraft-select screen
   - F-16 built from the owner's art (`docs/reference/f16_sprite_source.png`), gear drawn in code (art shows it retracted). Afterburner above 85% throttle (flame, A/B light, 3x fuel). Harder than the Mushshak: stall 125 kt, rotate 145 kt, approach ~145 kt, 4 s engine spool, twitchier pitch, weaker brakes, stricter landing limits.
   - Also: stalls no longer drop the nose (owner: "fall in the same position"); crashes break the fuselage into 2 or 3 tumbling pieces depending on impact severity.
+  - Follow-up (owner feedback): F-16 made smoother (render interpolation + camera locked to the plane, gentler pitch, fly-by-wire G limit `pitch_g_limit` 3 G), much bigger afterburner flame, nose gear moved under the intake. Centre attitude indicator and route bar replaced by a **positional radar** (side-view map of the route with both bases and the plane blip, phase + km to go + progress segments). **Per-aircraft cockpit:** `cockpit_style` Analog (Mushshak, round dials) / Glass (F-16, green speed/altitude tapes, Mach, G, VS bar, three gear lights).
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
 
 ### Open questions (owner to decide after playtesting)
