@@ -5,9 +5,10 @@ Work proceeds in small chunks. Only work on the current chunk. Tick boxes when d
 ## Phase 1: Prototype (current)
 Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.1 Project setup (settings, folders, input map, git)
-- [ ] 1.2 Plane on a runway (throttle, brakes, rolling, camera, debug text)
+- [x] 1.2 Plane on a runway (throttle, brakes, rolling, camera, debug text)
 - [ ] 1.3 Takeoff and flight (lift, pitch, stall, drag)
 - [ ] 1.4 Flaps, gear, engine, fuel
+  - TODO: E starts/stops the engine (until then thrust works without it). B also acts as an air brake in flight.
 - [ ] 1.5 Cockpit HUD layout (gauge panel, phase box, instructor message box)
 - [ ] 1.6 Two bases and parallax scenery
 - [ ] 1.7 Landing detection, grading, result screen
@@ -19,7 +20,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
 ## Phase 2: Feedback and polish
 - Gather friends' feedback. Tune controls and flight feel.
 - Real pixel art for the two aircraft and the two bases (replace placeholders).
-  - TODO (owner): aircraft must wear PAF colour schemes with the Pakistan flag and markings (Super Mushshak first, then F-16).
+  - TODO (owner): aircraft must wear PAF colour schemes with the Pakistan flag and markings (Super Mushshak first, then F-16). Mushshak reference: `docs/reference/super_mushshak_livery_reference.png`.
 - Sound: engine per aircraft type, touchdown, warnings (stall horn, gear).
 - Pause menu, simple options (volume, show key list).
 - Gamepad support.

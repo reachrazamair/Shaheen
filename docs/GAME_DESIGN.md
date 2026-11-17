@@ -20,7 +20,7 @@ The game should feel like TU-95 (simple, lo-fi, a bit charming), but with:
 
 ## 3. Flight model (arcade)
 
-Not real aerodynamics, but it should *behave* believably:
+Not real aerodynamics, but it should *behave* believably. The owner wants the motion to follow a realistic flight path: energy matters, too slow means a stall, more speed means more lift and a climb, friction and drag always act.
 - **Throttle** sets thrust. Heavier, slower aircraft accelerate slowly. Fighters are punchy.
 - **Pitch** (nose up and down) is the main control. The plane climbs when pitched up with enough speed.
 - **Lift** grows with speed. Below stall speed the plane loses lift and the nose drops.
@@ -97,12 +97,12 @@ Distances between bases are compressed so flights take a few minutes, not real-w
 
 | Action | Keys |
 |---|---|
-| Pitch up / down | W / S or ↑ / ↓ |
-| Throttle up / down | Shift / Ctrl, or hold E / Q |
-| Engine start / stop | I |
+| Pitch nose up / down | ↑ / ↓ |
+| Throttle up / down (hold) | W / S |
+| Engine start / stop | E |
 | Flaps cycle (Up → TO → LDG) | F |
 | Gear toggle | G |
-| Brakes (hold) | B or Space |
+| Brakes (hold): wheel brakes on the ground, air brake / speed brake in the air | B |
 | Pause | Esc |
 | Restart mission | R |
 

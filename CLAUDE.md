@@ -82,3 +82,18 @@ docs/
 
 - Bases and aircraft use real PAF names. Scenery is stylised and invented. No real layouts, no sensitive detail.
 - Official PAF insignia and emblems: use a stylised placeholder roundel for now. Using the real emblem in a public or paid release may need permission (ISPR/PAF). The owner will decide later.
+
+## Working notes (keep this section up to date)
+
+Decisions and facts future sessions need. Update it whenever something here changes.
+
+- **Godot 4.7.2** installed via winget. Executables: `C:\Users\rohai\AppData\Local\Microsoft\WinGet\Links\godot.exe` (editor) and `godot_console.exe` (headless/CLI). Both are on the user PATH as `godot` / `godot_console` (VS Code must be restarted to see it).
+  - Open the editor: `godot -e` from the project root. Run the game: F5.
+  - Headless checks: `godot_console --headless --path . --import` then `godot_console --headless --path . --quit-after 120`. Throwaway test scripts (`extends SceneTree`) go in the scratchpad, run with `-s <script>`.
+- **Git:** this folder is its own repo (branch `main`). Small commits per step. **Always ask the owner before pushing.** The owner will create the GitHub repo ("Shaheen") and share the link; no remote yet.
+- **Controls** (owner's layout, source of truth is the Input Map in `project.godot`): ↑/↓ pitch, W/S throttle, E engine, F flaps, G gear, B brake (ground and air), Esc pause, R restart.
+- **Aircraft order:** Super Mushshak first, then F-16. Both will eventually wear PAF colour schemes with the Pakistan flag; placeholders until the art phase. Mushshak livery reference: `docs/reference/super_mushshak_livery_reference.png`.
+- **Feel:** the owner wants motion that follows a believable flight path (too slow → stall, more speed → more lift → climb, drag and friction always act). Arcade-simple controls, believable physics.
+- **Units:** physics in SI; drawing at 4 px/m (`scripts/world_scale.gd`). Aircraft node origin = wheel contact point, nose points +x. Altitude A m is drawn at y = -A × 4.
+- **Layout conventions:** scene scripts live next to their `.tscn`; shared/global scripts in `scripts/`; Resource classes (`AircraftData`, later `BaseData`) in `scripts/data/`; `.tres` data in `data/`. `docs/` has a `.gdignore` so Godot doesn't import it.
+- **Scene tree (as of chunk 1.2):** `main.tscn` (Node) → instance of `flight/flight.tscn` (sky CanvasLayer, Ground, Runway, Aircraft, Camera, DebugUI). `main` becomes the start screen in chunk 1.8.

@@ -8,7 +8,7 @@ Everything else (career, money, menus beyond the basics, many bases, weather, we
 
 ### In
 - 2 aircraft, both defined as data (`AircraftData` resource):
-  - **Super Mushshak** (slow, forgiving trainer)
+  - **Super Mushshak** (slow, forgiving trainer). Built first. Livery reference for later art: `docs/reference/super_mushshak_livery_reference.png` (white body, red and blue cheat-line stripes, red wing top and tail band, Pakistan flag on the fin, serial number on the fuselage).
   - **F-16** (fast, powerful, higher stall and landing speed)
   - The point of having two is to prove that different numbers give a clearly different feel.
 - 2 bases, both defined as data (`BaseData` resource), e.g. **Risalpur** (departure) and **Peshawar** (destination):
@@ -27,7 +27,8 @@ Career and pay, unlocks, mission planner, weapons, weather, night, emergencies, 
 - Godot 4 (latest stable), GDScript, **Compatibility** renderer.
 - Viewport 640×360, stretch mode `viewport`, aspect `keep`, scale mode `integer`, default texture filter `Nearest`.
 - Window size for desktop testing: 1280×720 (2× scale).
-- Input actions defined in Project Settings → Input Map: `pitch_up`, `pitch_down`, `throttle_up`, `throttle_down`, `engine_toggle`, `flaps_cycle`, `gear_toggle`, `brake`, `pause`, `restart`.
+- Input actions defined in Project Settings → Input Map (owner's key layout):
+  `pitch_up` ↑, `pitch_down` ↓, `throttle_up` W, `throttle_down` S, `engine_toggle` E, `flaps_cycle` F, `gear_toggle` G, `brake` B (wheel brakes on the ground, air brake in the air), `pause` Esc, `restart` R.
 
 ## Aircraft data (`AircraftData` resource, all exported)
 
@@ -58,7 +59,7 @@ Use a `CharacterBody2D` (or `Node2D` with manual movement) updated in `_physics_
 - **On the ground:** wheels on the ground line, friction plus brakes. The nose can only rise once speed ≥ `rotate_speed`. Leaves the ground when lift > weight.
 - **Stall:** nose drops automatically and the HUD shows a STALL warning.
 - **Pitch input** rotates the nose at `pitch_rate`. Use slight smoothing so it doesn't feel jerky (the main complaint about TU-95's controls).
-- Units: choose a simple scale (e.g. 1 px = 1 m horizontally) and document it. HUD values should *look* plausible (knots and feet are fine for display).
+- Units: physics runs in SI (m, m/s, kg, N). Drawing uses **4 px per metre** (`WorldScale.PX_PER_M` in `scripts/world_scale.gd`): Super Mushshak ≈ 28 px long, F-16 ≈ 60 px. HUD shows knots and feet.
 
 ## World layout
 
