@@ -74,6 +74,7 @@ func _ready() -> void:
 	hud.setup(aircraft, departure, destination, route_distance_m)
 	aircraft.lifted_off.connect(_on_lifted_off)
 	aircraft.touched_down.connect(_on_touched_down)
+	aircraft.tail_struck.connect(_on_tail_struck)
 	result_screen.retry_pressed.connect(_retry)
 	result_screen.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_theme()
@@ -134,7 +135,7 @@ func _on_touched_down(vertical_speed_ms: float) -> void:
 		_crash("The gear was up: belly landing.", fpm)
 	elif absf(rad_to_deg(aircraft.touchdown_pitch)) > 90.0:
 		_crash("Hit the ground upside down.", fpm)
-	elif rad_to_deg(aircraft.touchdown_pitch) > d.max_ground_pitch_deg + 3.0:
+	elif rad_to_deg(aircraft.touchdown_pitch) > d.tail_strike_pitch_deg:
 		_crash("Tail strike: the nose was far too high at touchdown.", fpm)
 	elif rad_to_deg(aircraft.touchdown_pitch) < -d.max_nose_down_touchdown_deg:
 		_crash("Nose-first landing: flare before touchdown.", fpm)
@@ -143,6 +144,13 @@ func _on_touched_down(vertical_speed_ms: float) -> void:
 	else:
 		state = State.ROLLOUT
 		_landed_on = where
+
+
+func _on_tail_struck() -> void:
+	if state == State.DONE:
+		return
+	var sink := maxf(-aircraft.velocity_m.y, 0.0) * WorldScale.M_TO_FT * 60.0
+	_crash("Tail strike: you over-rotated. Too much nose-up near the ground.", sink)
 
 
 ## On the ground: overrun / off-runway checks, and the end of the rollout.

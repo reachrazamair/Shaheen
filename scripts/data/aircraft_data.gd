@@ -101,9 +101,6 @@ extends Resource
 ## Holding nose-up on the takeoff roll starts lifting the nose from this
 ## fraction of rotate speed (fully free at rotate speed).
 @export var rotate_start_fraction := 0.7
-## Takeoff protection: from lift-off until takeoff_limit_height_ft the nose
-## can't go above this pitch (no hanging vertical with no speed). Free after.
-@export var takeoff_pitch_limit_deg := 20.0
 ## Takeoff roll: once the nose wheel is off and speed >= rotate speed, the
 ## nose keeps coming up at this rate to the takeoff attitude (tail-strike
 ## limit - 2 deg), so the aircraft flies off by itself.
@@ -112,9 +109,15 @@ extends Resource
 ## up any more and comes down gently at derotate_rate_deg_s.
 @export var nose_down_fraction := 0.75
 @export var derotate_rate_deg_s := 5.0
-@export var takeoff_limit_height_ft := 500.0
-## Max nose-up on the ground before the tail would strike.
+## Below rotate speed (and on the slow part of the landing roll) the tail
+## doesn't have the airflow to lift the nose higher than this.
 @export var max_ground_pitch_deg := 12.0
+## Pitch at which the tail hits the runway = crash. No pitch limit otherwise:
+## at or above rotate speed the player can over-rotate into a tail strike.
+## Also checked just after lift-off: the tail sits sprite_main_wheel_x texture
+## px behind the main wheels, so with the wheels only a few metres up a big
+## pitch still drags the tail.
+@export var tail_strike_pitch_deg := 15.0
 
 @export_group("Ground handling")
 ## Rolling resistance as a fraction of the weight on the wheels.

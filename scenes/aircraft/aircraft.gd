@@ -21,6 +21,8 @@ extends Node2D
 
 signal touched_down(vertical_speed_ms: float)
 signal lifted_off
+## The tail hit the runway (over-rotation on the ground or just after lift-off).
+signal tail_struck
 
 const FLAP_NAMES := ["UP", "TO", "LDG"]
 ## Crash severity (0..1) from which a crash is "big": explosion, shards blasted out.
@@ -71,7 +73,6 @@ var elevator := 0.0
 ## Night flight: draw nav/strobe/landing lights (set by the flight scene).
 var night_lights := false
 ## True from lift-off until the takeoff pitch limit height (see AircraftData).
-var takeoff_climb := false
 ## True on the ground after a touchdown (nose comes down by itself when slow).
 var landing_roll := false
 var _bounced := false            ## already hopped once this landing (only one hop per landing)
@@ -155,7 +156,6 @@ func reset_state() -> void:
 	gear_down = true
 	gear_pos = 1.0
 	g_load = 1.0
-	takeoff_climb = false
 	landing_roll = false
 	_bounced = false
 	blackout = 0.0
@@ -262,12 +262,15 @@ func _update_pitch(delta: float) -> void:
 			var hold := clampf((speed - down) / maxf(rotate_ms * 0.15, 0.1), 0.0, 1.0)
 			upper = deg_to_rad(data.max_ground_pitch_deg) * hold
 			lower_rate = deg_to_rad(data.derotate_rate_deg_s)
+			if hold >= 1.0:
+				upper = INF  # still fast: free to flare (or over-rotate into a tail strike)
 		else:
 			# The nose wheel can start to lift from rotate_start_fraction x rotate speed;
-			# the allowed nose-up grows to the tail-strike limit at rotate speed.
+			# the allowed nose-up grows to max_ground_pitch_deg just below rotate speed.
+			# From rotate speed there is no limit: pull too far and the tail strikes.
 			var start := rotate_ms * data.rotate_start_fraction
 			var allow := clampf((speed - start) / maxf(rotate_ms - start, 0.1), 0.0, 1.0)
-			upper = deg_to_rad(data.max_ground_pitch_deg) * allow
+			upper = deg_to_rad(data.max_ground_pitch_deg) * allow if speed < rotate_ms else INF
 		if pitch > upper:
 			# Above what the speed allows: the nose comes down at lower_rate,
 			# whatever the stick says.
@@ -280,12 +283,27 @@ func _update_pitch(delta: float) -> void:
 		# No attitude limits in the air: loops, vertical climbs and inverted
 		# flight are all possible; the aerodynamics decide what happens.
 		pitch = wrapf(pitch, -PI, PI)
-		if takeoff_climb:
-			if altitude_ft > data.takeoff_limit_height_ft:
-				takeoff_climb = false
-			elif pitch > deg_to_rad(data.takeoff_pitch_limit_deg):
-				pitch = deg_to_rad(data.takeoff_pitch_limit_deg)
-				pitch_rate = minf(pitch_rate, 0.0)
+	_check_tail_strike()
+
+
+## Tail strike: the tail sits tail_arm_m() behind the main wheels. With the
+## wheels at height h and pitch p, it touches the runway once
+## h < tail_arm * (sin p - sin strike). Only near the ground with gear down
+## (gear-up and touchdown cases are judged by the landing check).
+func _check_tail_strike() -> void:
+	if crashed or pitch <= deg_to_rad(data.tail_strike_pitch_deg) or pitch > PI * 0.5:
+		return
+	var reach := tail_arm_m() * (sin(pitch) - sin(deg_to_rad(data.tail_strike_pitch_deg)))
+	if pos_m.y < reach:
+		tail_struck.emit()
+
+
+## Metres from the main wheels back to the tail (from the sprite; the texture's
+## left edge is the tail).
+func tail_arm_m() -> float:
+	if data.sprite:
+		return data.sprite_main_wheel_x * data.sprite_scale / WorldScale.PX_PER_M
+	return 8.0
 
 
 func _integrate(delta: float) -> void:
@@ -315,7 +333,6 @@ func _integrate(delta: float) -> void:
 	if on_ground:
 		if force.y > 0.0:
 			on_ground = false
-			takeoff_climb = true
 			landing_roll = false
 			_bounced = false
 			lifted_off.emit()

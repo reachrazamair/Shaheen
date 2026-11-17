@@ -14,6 +14,10 @@ extends CanvasLayer
 
 ## Seconds between repeated STALL callouts.
 @export var stall_callout_cooldown_s := 4.0
+## "Nose too high" warning: shouted when the nose is within this many degrees
+## of the tail-strike pitch while the tail is still near the runway.
+@export var tail_warning_margin_deg := 4.0
+@export var tail_warning_cooldown_s := 3.0
 
 var aircraft: Aircraft
 var departure: BaseData
@@ -24,6 +28,7 @@ var has_flown := false
 var flight_over := false
 var _said := {}
 var _stall_cooldown := 0.0
+var _tail_cooldown := 0.0
 var _last_touchdown_fpm := 0.0
 var _prev_gear_down := true
 var _prev_flap := 1
@@ -101,6 +106,7 @@ func _instructor(delta: float) -> void:
 	elif a.low_fuel:
 		_once("low_fuel", "Fuel is LOW! Did you even check it? Get it on the ground, FAST!")
 
+	_tail_warning(delta)
 	_react_to_controls()
 
 	if not has_flown and a.on_ground:
@@ -110,7 +116,7 @@ func _instructor(delta: float) -> void:
 			else:
 				_once("engine", "Engine's running. What are you waiting for? UP, throttle! MOVE!")
 		if a.speed_kt >= a.data.rotate_speed_kt:
-			_once("rotate", "ROTATE! LEFT key, lift the nose! Now, now, NOW!")
+			_once("rotate", "ROTATE! LEFT key, EASE the nose up! Don't yank it or you'll scrape the d*mn tail!")
 	elif not a.on_ground:
 		var gear_still_down := a.data.retractable_gear and a.gear_down
 		if a.flap_setting != 0 and a.altitude_ft > 500.0 and not gear_still_down and not _approaching():
@@ -128,6 +134,18 @@ func _instructor(delta: float) -> void:
 			_once("cleared", "%s tower: cleared to land. Gently! Easy, EASY!" % dest)
 		if dist < -destination.runway_length_m:
 			_once("overshot", "You FLEW PAST the runway?! Unbelievable. Press R. Again, d*mn it!")
+
+
+## Warn before a tail strike: nose close to the strike pitch while the tail is
+## still within reach of the runway (on the roll, at lift-off or in the flare).
+func _tail_warning(delta: float) -> void:
+	var a := aircraft
+	_tail_cooldown = maxf(0.0, _tail_cooldown - delta)
+	var strike := deg_to_rad(a.data.tail_strike_pitch_deg)
+	var near_ground := a.pos_m.y < a.tail_arm_m() * (sin(strike + deg_to_rad(10.0)) - sin(strike))
+	if _tail_cooldown <= 0.0 and near_ground and a.speed_kt > 20.0 and a.pitch_rate > 0.0 			and a.pitch > strike - deg_to_rad(tail_warning_margin_deg) and a.pitch < strike:
+		_tail_cooldown = tail_warning_cooldown_s
+		messages.say("NOSE TOO HIGH! You'll hit the tail! Ease OFF!", true)
 
 
 func _approaching() -> bool:
