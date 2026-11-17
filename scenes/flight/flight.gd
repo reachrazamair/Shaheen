@@ -177,14 +177,15 @@ func _finish_landing() -> void:
 func _crash(reason: String, fpm := -1.0) -> void:
 	if state == State.DONE:
 		return
-	# Severity (0..1) from sink rate and ground speed: >= 0.5 breaks the
-	# fuselage into 3 pieces, below that into 2.
+	# Severity (0..1) from sink rate and ground speed: >= Aircraft.BIG_CRASH_SEVERITY is a big crash
+	# (explosion, shards blasted out), below that the wreck shatters and scrapes along.
 	var d := aircraft.data
 	var sink := maxf(fpm, 0.0)
 	var severity := clampf(sink / (2.0 * d.hard_touchdown_fpm) + aircraft.speed_kt / (4.0 * d.stall_speed_kt), 0.0, 1.0)
 	aircraft.crash(severity)
 	var fx := Node2D.new()
 	fx.set_script(CrashEffect)
+	fx.severity = severity
 	fx.position = aircraft.position
 	add_child(fx)
 	var result := _base_result()

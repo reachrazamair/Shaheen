@@ -22,6 +22,8 @@ signal touched_down(vertical_speed_ms: float)
 signal lifted_off
 
 const FLAP_NAMES := ["UP", "TO", "LDG"]
+## Crash severity (0..1) from which a crash is "big": explosion, shards blasted out.
+const BIG_CRASH_SEVERITY := 0.6
 
 @export var data: AircraftData
 
@@ -72,7 +74,7 @@ var blackout := 0.0
 var redout := 0.0
 var _prev_vel := Vector2.ZERO
 var _time := 0.0
-## Wreckage pieces after a crash: {poly (texture px around the piece centre), uvs, pos, vel, rot, spin, resting}
+## Wreckage shards after a crash: {poly (texture px around the shard centre), uvs, pos, vel, rot, spin, tint, resting}
 var _fragments: Array = []
 ## Node transform at the previous and latest physics tick. Each rendered frame
 ## draws the aircraft between the two, so fast jets move smoothly even when the
@@ -348,8 +350,9 @@ func _thrust(speed: float) -> float:
 	return t
 
 
-## Wreck the aircraft: the fuselage breaks into 2 pieces (severity < 0.5) or
-## 3 pieces (violent impact) that tumble apart and come to rest. Engine off,
+## Wreck the aircraft: the airframe shatters into many small irregular shards.
+## Small crash (severity < BIG_CRASH_SEVERITY): the shards scatter a little and scrape along
+## the ground. Big crash: an explosion flings them outward. Engine off,
 ## controls dead. The flight scene adds fire/smoke and the result screen.
 ## severity: 0..1 (from impact sink rate and speed).
 func crash(severity := 0.5) -> void:
@@ -378,70 +381,101 @@ func crash(severity := 0.5) -> void:
 func _build_fragments(severity: float, impact_vel: Vector2, crash_pitch: float) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	var img := data.sprite.get_image()
+	if img.is_compressed():
+		img.decompress()
 	var tex_size := data.sprite.get_size()
 	var sc := data.sprite_scale
-	# Only the painted part of the texture (so pieces rest on their real bottom edge).
-	var used := Rect2(data.sprite.get_image().get_used_rect())
-	var w := used.size.x
-	# Tear lines: 1 (moderate impact, 2 pieces) or 2 (violent, 3 pieces), at random spots.
-	var cut_fracs: Array = []
-	if severity >= 0.5:
-		cut_fracs = [rng.randf_range(0.25, 0.4), rng.randf_range(0.6, 0.75)]
-	else:
-		cut_fracs = [rng.randf_range(0.38, 0.62)]
-	# Each tear is a jagged line from top to bottom; the outer edges are straight.
-	var lines: Array = [_straight_line(used.position.x, used)]
-	for c in cut_fracs:
-		lines.append(_tear_line(used.position.x + c * w, used, w * 0.07, rng))
-	lines.append(_straight_line(used.end.x, used))
+	var used := Rect2(img.get_used_rect())
+	var big := severity >= BIG_CRASH_SEVERITY
+	# Shatter grid: a lattice with jittered inner points, so cells are irregular.
+	# Shard size ~ shard_px on screen (smaller and more pieces for a big crash).
+	var shard_px := 5.0 if big else 7.0
+	var cols := maxi(3, roundi(used.size.x * sc / shard_px))
+	var rows := maxi(2, roundi(used.size.y * sc / shard_px))
+	var cw := used.size.x / cols
+	var ch := used.size.y / rows
+	var lattice: Array = []
+	for r in rows + 1:
+		var row := PackedVector2Array()
+		for c in cols + 1:
+			var v := used.position + Vector2(c * cw, r * ch)
+			if c > 0 and c < cols:
+				v.x += rng.randf_range(-0.38, 0.38) * cw
+			if r > 0 and r < rows:
+				v.y += rng.randf_range(-0.38, 0.38) * ch
+			row.append(v)
+		lattice.append(row)
 
 	var origin := Vector2(-tex_size.x * 0.5 * sc, -data.sprite_wheel_bottom_y * sc)
-	var base_vel := Vector2(impact_vel.x, 0.0) * WorldScale.PX_PER_M * 0.35
-	var n := lines.size() - 1
+	var forward := Vector2(impact_vel.x, 0.0) * WorldScale.PX_PER_M * (0.3 if big else 0.45)
+	var blast_centre := used.get_center()
 	_fragments.clear()
-	for k in n:
-		var left: PackedVector2Array = lines[k]
-		var right: PackedVector2Array = lines[k + 1]
-		var poly := PackedVector2Array(left)
-		for m in range(right.size() - 1, -1, -1):
-			poly.append(right[m])
-		var centre_tex := Vector2.ZERO
-		for v in poly:
-			centre_tex += v
-		centre_tex /= poly.size()
-		var local := PackedVector2Array()
-		var uvs := PackedVector2Array()
-		for v in poly:
-			local.append(v - centre_tex)
-			uvs.append(v / tex_size)
-		var spread := (float(k) - (n - 1) * 0.5) * rng.randf_range(15.0, 30.0) * (0.6 + severity)
-		_fragments.append({
-			"poly": local,
-			"uvs": uvs,
-			"pos": (origin + centre_tex * sc).rotated(-crash_pitch),
-			"vel": base_vel + Vector2(spread, -rng.randf_range(10.0, 35.0) * severity),
-			"rot": -crash_pitch,
-			"spin": rng.randf_range(-1.5, 1.5) * severity,
-			"resting": false,
-		})
+	for r in rows:
+		for c in cols:
+			var a: Vector2 = lattice[r][c]
+			var b: Vector2 = lattice[r][c + 1]
+			var cc: Vector2 = lattice[r + 1][c + 1]
+			var d: Vector2 = lattice[r + 1][c]
+			# Each cell becomes one chunk or two triangles split along a random diagonal.
+			var shapes: Array = []
+			var roll := rng.randf()
+			if roll < 0.35:
+				shapes = [[a, b, cc, d]]
+			elif roll < 0.7:
+				shapes = [[a, b, cc], [a, cc, d]]
+			else:
+				shapes = [[a, b, d], [b, cc, d]]
+			for s in shapes:
+				_add_shard(s, img, tex_size, origin, crash_pitch, forward, blast_centre, big, severity, rng)
 
 
-func _straight_line(x: float, used: Rect2) -> PackedVector2Array:
-	return PackedVector2Array([Vector2(x, used.position.y), Vector2(x, used.end.y)])
-
-
-## A ragged tear from the top to the bottom of the painted area around x.
-func _tear_line(x: float, used: Rect2, jag: float, rng: RandomNumberGenerator) -> PackedVector2Array:
-	var pts := PackedVector2Array()
-	var steps := 9
-	var lean := rng.randf_range(-jag, jag)   # the whole tear slants a bit
-	for s in steps + 1:
-		var f := float(s) / steps
-		var zig := jag * (0.5 if s % 2 == 0 else -0.5) + rng.randf_range(-jag, jag) * 0.6
-		if s == 0 or s == steps:
-			zig *= 0.3
-		pts.append(Vector2(x + lean * (f - 0.5) * 2.0 + zig, lerpf(used.position.y, used.end.y, f)))
-	return pts
+## One shard: a small polygon of the texture. Skipped if it covers only empty pixels.
+func _add_shard(pts: Array, img: Image, tex_size: Vector2, origin: Vector2, crash_pitch: float,
+		forward: Vector2, blast_centre: Vector2, big: bool, severity: float, rng: RandomNumberGenerator) -> void:
+	var centre := Vector2.ZERO
+	for v in pts:
+		centre += v
+	centre /= pts.size()
+	var solid := 0
+	for v in pts + [centre]:
+		var s: Vector2 = (v as Vector2).lerp(centre, 0.4)
+		var px := Vector2i(clampi(int(s.x), 0, img.get_width() - 1), clampi(int(s.y), 0, img.get_height() - 1))
+		if img.get_pixelv(px).a > 0.3:
+			solid += 1
+	if solid < 2:
+		return
+	var local := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for v in pts:
+		local.append(v - centre)
+		uvs.append(v / tex_size)
+	var vel := forward
+	var spin := 0.0
+	if big:
+		# Explosion: shards blast away from the middle of the airframe.
+		var out := (centre - blast_centre).normalized()
+		if out == Vector2.ZERO:
+			out = Vector2.UP
+		out = (out + Vector2(0, -0.8)).normalized().rotated(rng.randf_range(-0.6, 0.6))
+		vel += out * rng.randf_range(20.0, 75.0) * (0.5 + 0.5 * severity)
+		spin = rng.randf_range(-10.0, 10.0)
+	else:
+		# Breaking up on the ground: shards scatter a little and scrape along.
+		vel *= rng.randf_range(0.55, 1.15)
+		vel += Vector2(rng.randf_range(-18.0, 18.0), -rng.randf_range(0.0, 28.0))
+		spin = rng.randf_range(-5.0, 5.0)
+	var shade := rng.randf_range(0.55, 0.9)   # some pieces scorched darker
+	_fragments.append({
+		"poly": local,
+		"uvs": uvs,
+		"pos": (origin + centre * data.sprite_scale).rotated(-crash_pitch),
+		"vel": vel,
+		"rot": -crash_pitch,
+		"spin": spin,
+		"tint": Color(shade, shade * 0.97, shade * 0.95),
+		"resting": false,
+	})
 
 
 ## Pieces fly, then hit the ground and slide to a stop: no bounce.
@@ -538,7 +572,7 @@ func _draw_fragments() -> void:
 	var sc := data.sprite_scale
 	for f in _fragments:
 		draw_set_transform(f.pos, f.rot, Vector2(sc, sc))
-		draw_colored_polygon(f.poly, Color(0.8, 0.78, 0.76), f.uvs, data.sprite)
+		draw_colored_polygon(f.poly, f.tint, f.uvs, data.sprite)
 	draw_set_transform(Vector2.ZERO)
 
 
