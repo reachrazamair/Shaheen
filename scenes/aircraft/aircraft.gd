@@ -53,6 +53,7 @@ var gear_down := true              ## target
 var gear_pos := 1.0                ## actual: 1 down and locked, 0 up
 
 var _stall_timer := 0.0
+var _prop_angle := 0.0
 
 var speed_kt: float:
 	get: return velocity_m.length() * WorldScale.MS_TO_KT
@@ -113,6 +114,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_stall_timer = maxf(0.0, _stall_timer - delta)
+	_prop_angle = fmod(_prop_angle + engine_rpm * 30.0 * delta, TAU)
 	_read_controls(delta)
 	_update_systems(delta)
 	_update_pitch(delta)
@@ -271,58 +273,71 @@ func _sync_node() -> void:
 	rotation = -pitch
 
 
-# --- Placeholder drawing (replaced by data.sprite when real art exists) ---
+# --- Drawing ---
+# With a sprite: sprite + code-drawn gear (behind the body), flaps and propeller.
+# Without one: a simple placeholder silhouette.
 
 func _draw() -> void:
 	if data == null:
 		return
-	var l := data.length_m * WorldScale.PX_PER_M
-	var h := data.height_m * WorldScale.PX_PER_M
 	if data.sprite:
-		var size := data.sprite.get_size()
-		var s := l / size.x
-		draw_set_transform(Vector2(-l * 0.5, -size.y * s), 0.0, Vector2(s, s))
-		draw_texture(data.sprite, Vector2.ZERO)
-		draw_set_transform(Vector2.ZERO)
-		return
-	_draw_placeholder(l, h)
+		_draw_sprite_aircraft()
+	else:
+		_draw_placeholder(data.length_m * WorldScale.PX_PER_M, data.height_m * WorldScale.PX_PER_M)
+
+
+func _draw_sprite_aircraft() -> void:
+	var size := data.sprite.get_size()
+	# Sprite top-left so the wheel bottoms (gear down) sit on the node origin.
+	var o := Vector2(-roundf(size.x * 0.5), -data.sprite_wheel_bottom_y)
+	var outline := Color(0.11, 0.12, 0.15)
+	var hub := Color(0.6, 0.62, 0.65)
+
+	# Landing gear, drawn first so it retracts up behind the fuselage.
+	var leg := (data.sprite_wheel_bottom_y - data.sprite_belly_y) * gear_pos
+	if leg > 1.0:
+		for gx in [data.sprite_main_gear_x, data.sprite_nose_gear_x]:
+			var top := o + Vector2(gx, data.sprite_belly_y - 1.0)
+			draw_rect(Rect2(top.x - 1, top.y, 2, leg - 2), outline)
+			var wheel := Rect2(top.x - 2, top.y + leg - 4, 5, 5)
+			draw_rect(wheel, outline)
+			draw_rect(Rect2(wheel.position + Vector2(1, 1), Vector2(3, 3)), Color(0.22, 0.22, 0.24))
+			draw_rect(Rect2(wheel.position + Vector2(2, 2), Vector2(1, 1)), hub)
+
+	draw_texture(data.sprite, o)
+
+	# Flaps: a red panel hanging from the wing trailing edge (40 degrees at LDG).
+	if flap_pos > 0.02:
+		var hinge := o + data.sprite_flap_hinge
+		var ang := deg_to_rad(20.0 * flap_pos)   # 0 = in line with the wing, 40 deg at LDG
+		var tip := hinge + Vector2(-cos(ang), sin(ang)) * data.sprite_flap_length   # back and down
+		draw_line(hinge, tip, outline, 3.0)
+		draw_line(hinge, tip, data.stripe_color, 1.0)
+
+	# Propeller: a turning blade when slow, a translucent disc when running.
+	var pc := o + data.sprite_prop_center
+	var r := data.sprite_prop_radius
+	if engine_rpm > 0.6:
+		draw_rect(Rect2(pc.x, pc.y - r, 1, r * 2), Color(0.75, 0.78, 0.82, 0.25 + 0.3 * engine_rpm))
+		draw_rect(Rect2(pc.x, pc.y - 1, 1, 2), outline)
+	else:
+		var span := r * absf(cos(_prop_angle))
+		draw_rect(Rect2(pc.x, pc.y - span, 2, span * 2 + 1), outline)
 
 
 func _draw_placeholder(l: float, h: float) -> void:
 	var p := func(fx: float, fy: float) -> Vector2: return Vector2(fx * l, -fy * h)
 	var dark := Color(0.15, 0.15, 0.18)
-
-	# Landing gear: legs + wheels, retracting up into the fuselage with gear_pos.
 	if gear_pos > 0.05:
-		var drop := lerpf(0.4, 0.0, gear_pos)   # wheels rise as the gear comes up
 		for gx in [-0.05, 0.36]:
-			draw_line(p.call(gx, 0.15 + drop), p.call(gx, 0.4), dark, 1.0)
-			draw_rect(Rect2(p.call(gx, drop) + Vector2(-1.5, -3.0), Vector2(3, 3)), dark)
-
-	# Fuselage.
+			draw_line(p.call(gx, 0.15), p.call(gx, 0.4), dark, 1.0)
+			draw_rect(Rect2(p.call(gx, 0.0) + Vector2(-1.5, -3.0), Vector2(3, 3)), dark)
 	draw_colored_polygon(PackedVector2Array([
 		p.call(0.50, 0.55), p.call(0.42, 0.38), p.call(-0.20, 0.38),
 		p.call(-0.50, 0.62), p.call(-0.50, 0.72), p.call(0.25, 0.80),
 		p.call(0.45, 0.72),
 	]), data.body_color)
-	# Livery stripes along the fuselage.
-	draw_line(p.call(-0.48, 0.60), p.call(0.46, 0.50), data.stripe_color, 1.0)
-	draw_line(p.call(-0.46, 0.55), p.call(0.44, 0.45), data.trim_color, 1.0)
-	# Tail fin with a red leading band.
 	draw_colored_polygon(PackedVector2Array([
-		p.call(-0.50, 0.70), p.call(-0.47, 1.05), p.call(-0.38, 1.05),
-		p.call(-0.28, 0.74),
+		p.call(-0.50, 0.70), p.call(-0.47, 1.05), p.call(-0.38, 1.05), p.call(-0.28, 0.74),
 	]), data.body_color)
-	draw_line(p.call(-0.47, 1.0), p.call(-0.49, 0.72), data.stripe_color, 2.0)
-	# Canopy and high wing, with flaps hanging down from the wing's trailing edge.
-	draw_colored_polygon(PackedVector2Array([
-		p.call(0.02, 0.78), p.call(0.30, 0.79), p.call(0.20, 0.97), p.call(0.04, 0.97),
-	]), Color(0.55, 0.78, 0.92))
-	draw_rect(Rect2(p.call(-0.12, 1.02), Vector2(0.42 * l, 2)), data.stripe_color)
-	if flap_pos > 0.05:
-		draw_line(p.call(-0.12, 0.98), p.call(-0.12 - 0.06 * flap_pos, 0.98 - 0.12 * flap_pos), data.stripe_color, 1.0)
-	# Propeller: blurred disc when running, a still blade when stopped.
-	if engine_rpm > 0.3:
-		draw_line(p.call(0.52, 0.85), p.call(0.52, 0.25), Color(0.4, 0.4, 0.45, 0.4 + 0.4 * engine_rpm), 1.0)
-	else:
-		draw_line(p.call(0.52, 0.70), p.call(0.52, 0.40), dark, 1.0)
+	draw_line(p.call(-0.48, 0.60), p.call(0.46, 0.50), data.stripe_color, 1.0)

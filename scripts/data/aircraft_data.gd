@@ -105,9 +105,24 @@ extends Resource
 ## Real-world size in metres; drives the placeholder shape and sprite scale.
 @export var length_m := 7.0
 @export var height_m := 2.6
-## Optional finished sprite (nose pointing right, wheels touching the bottom edge).
-## When empty, a placeholder silhouette is drawn instead.
+## Side-view sprite, nose pointing right, WITHOUT gear/propeller/flaps (the
+## Aircraft script draws and animates those at the positions below).
+## Drawn at 1 sprite pixel = 1 world pixel, i.e. aircraft appear ~2x their
+## true size against the 4 px/m world, for readability.
+## When empty, a simple placeholder silhouette is drawn instead.
 @export var sprite: Texture2D
+## Sprite-pixel coordinates (from the sprite's top-left):
+## y where the wheel bottoms sit when the gear is down (= the ground line).
+@export var sprite_wheel_bottom_y := 27.0
+## y of the fuselage underside where the gear legs attach.
+@export var sprite_belly_y := 21.0
+@export var sprite_main_gear_x := 37.0
+@export var sprite_nose_gear_x := 55.0
+@export var sprite_prop_center := Vector2(66, 15)
+@export var sprite_prop_radius := 9.0
+## Wing trailing edge, where the flap hangs from.
+@export var sprite_flap_hinge := Vector2(22, 6)
+@export var sprite_flap_length := 5.0
 @export var body_color := Color(0.95, 0.95, 0.95)
 @export var stripe_color := Color(0.82, 0.12, 0.12)
 @export var trim_color := Color(0.25, 0.4, 0.8)
