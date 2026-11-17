@@ -102,7 +102,7 @@ Distances between bases are compressed so flights take a few minutes, not real-w
 | Throttle up / down (hold) | ↑ / ↓ |
 | Pitch nose up / down | ← / → |
 | Engine start / stop | E |
-| Flaps cycle (Up → TO → LDG) | F |
+| Flaps: step one notch (flights start in TO; order TO → UP → TO → LDG → TO …) | F |
 | Gear toggle | G |
 | Brakes (hold): wheel brakes on the ground, air brake / speed brake in the air | B |
 | Pause | Esc |

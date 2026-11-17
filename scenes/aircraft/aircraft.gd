@@ -48,6 +48,9 @@ var engine_on := false             ## switch position
 var engine_rpm := 0.0              ## 0..1, spools toward 1 when on, 0 when off
 var fuel_kg := 0.0
 var flap_setting := 0              ## target: 0 UP, 1 TO, 2 LDG
+## F steps the flaps one notch in this direction and reverses at the ends:
+## TO -> UP (after takeoff) -> TO -> LDG (approach) -> TO -> UP ...
+var flap_direction := -1
 var flap_pos := 0.0                ## actual, moves toward flap_setting
 var gear_down := true              ## target
 var gear_pos := 1.0                ## actual: 1 down and locked, 0 up
@@ -100,8 +103,9 @@ func reset_state() -> void:
 	fuel_kg = data.fuel_capacity_kg
 	engine_on = start_with_engine_on
 	engine_rpm = 1.0 if start_with_engine_on else 0.0
-	flap_setting = 0
-	flap_pos = 0.0
+	flap_setting = data.default_flap_setting
+	flap_pos = float(flap_setting)
+	flap_direction = -1
 	gear_down = true
 	gear_pos = 1.0
 	_sync_node()
@@ -113,7 +117,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("engine_toggle"):
 		engine_on = not engine_on and fuel_kg > 0.0
 	elif event.is_action_pressed("flaps_cycle"):
-		flap_setting = (flap_setting + 1) % FLAP_NAMES.size()
+		if flap_setting + flap_direction < 0 or flap_setting + flap_direction >= FLAP_NAMES.size():
+			flap_direction = -flap_direction
+		flap_setting += flap_direction
 	elif event.is_action_pressed("gear_toggle"):
 		# Fixed gear can't move; retractable gear can't come up on the ground.
 		if data.retractable_gear and not (on_ground and gear_down):
@@ -204,7 +210,8 @@ func _integrate(delta: float) -> void:
 	lift_ratio = lift_mag / weight
 
 	var drag_mult := 1.0 + data.induced_drag * cl * cl + _flap_value(data.flap_drag) \
-			+ data.gear_drag * gear_pos + (data.airbrake_drag if airbrake_out else 0.0)
+			+ data.gear_drag * gear_pos + (data.airbrake_drag if airbrake_out else 0.0) \
+			+ (0.0 if on_ground else data.pitch_rate_drag * absf(rad_to_deg(pitch_rate)))
 	var lift := Vector2(-path.y, path.x) * lift_mag
 	var drag := -path * data.drag_coefficient * speed * speed * drag_mult
 	var thrust := nose * _thrust(speed)
@@ -340,8 +347,8 @@ func _draw_sprite_aircraft() -> void:
 		var hinge := data.sprite_flap_hinge
 		var ang := deg_to_rad(20.0 * flap_pos)
 		var tip := hinge + Vector2(-cos(ang), sin(ang)) * data.sprite_flap_length
-		draw_line(hinge, tip, Color(0.15, 0.15, 0.18), 4.0)
-		draw_line(hinge, tip, data.stripe_color, 2.0)
+		draw_line(hinge, tip, Color(0.15, 0.15, 0.18), 10.0)
+		draw_line(hinge, tip, data.stripe_color, 6.0)
 
 	# Propeller: the art's blurred blades while running, a still blade when stopped.
 	var pc := data.sprite_prop_center

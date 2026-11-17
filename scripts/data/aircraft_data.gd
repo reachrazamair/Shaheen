@@ -36,7 +36,11 @@ extends Resource
 @export var drag_coefficient := 0.7
 ## Extra drag from producing lift: adds induced_drag * cl^2 to the drag multiplier.
 ## Makes hard pulls and slow, nose-high flight bleed energy.
-@export var induced_drag := 0.6
+@export var induced_drag := 2.0
+## Extra drag while the nose is rotating: adds pitch_rate_drag * |pitch rate in deg/s|
+## to the drag multiplier. Yanking the nose up sharply costs a lot of speed;
+## gentle, smooth pitch changes cost little.
+@export var pitch_rate_drag := 0.35
 
 @export_group("Lift and stall")
 ## Clean (no flaps) stall speed. Lift equals weight at this speed at the stall angle.
@@ -61,6 +65,8 @@ extends Resource
 @export var flap_drag := PackedFloat32Array([0.0, 0.25, 0.7])
 ## Seconds to move one flap step.
 @export var flap_move_time_s := 1.2
+## Flap setting at the start of a flight (0 UP, 1 TO, 2 LDG).
+@export var default_flap_setting := 1
 
 @export_group("Landing gear")
 ## False = fixed gear (e.g. Super Mushshak): always down, G does nothing.
@@ -138,7 +144,7 @@ extends Resource
 @export var sprite_prop_radius := 34.0
 ## Wing trailing edge, where the flap hangs from.
 @export var sprite_flap_hinge := Vector2(130, 40)
-@export var sprite_flap_length := 8.0
+@export var sprite_flap_length := 18.0
 @export var body_color := Color(0.95, 0.95, 0.95)
 @export var stripe_color := Color(0.82, 0.12, 0.12)
 @export var trim_color := Color(0.25, 0.4, 0.8)
