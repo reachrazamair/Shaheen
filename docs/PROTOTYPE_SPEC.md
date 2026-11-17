@@ -28,7 +28,7 @@ Career and pay, unlocks, mission planner, weapons, weather, night, emergencies, 
 - Viewport 640×360, stretch mode `viewport`, aspect `keep`, scale mode `integer`, default texture filter `Nearest`.
 - Window size for desktop testing: 1280×720 (2× scale).
 - Input actions defined in Project Settings → Input Map (owner's key layout):
-  `pitch_up` ↑, `pitch_down` ↓, `throttle_up` W, `throttle_down` S, `engine_toggle` E, `flaps_cycle` F, `gear_toggle` G, `brake` B (wheel brakes on the ground, air brake in the air), `pause` Esc, `restart` R.
+  `throttle_up` ↑, `throttle_down` ↓, `pitch_up` ←, `pitch_down` →, `engine_toggle` E, `flaps_cycle` F, `gear_toggle` G, `brake` B (wheel brakes on the ground, air brake in the air), `pause` Esc, `restart` R.
 
 ## Aircraft data (`AircraftData` resource, all exported)
 

@@ -97,8 +97,8 @@ Distances between bases are compressed so flights take a few minutes, not real-w
 
 | Action | Keys |
 |---|---|
-| Pitch nose up / down | ↑ / ↓ |
-| Throttle up / down (hold) | W / S |
+| Throttle up / down (hold) | ↑ / ↓ |
+| Pitch nose up / down | ← / → |
 | Engine start / stop | E |
 | Flaps cycle (Up → TO → LDG) | F |
 | Gear toggle | G |
