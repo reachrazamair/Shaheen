@@ -81,6 +81,8 @@ Follow the layout in `CLAUDE.md` and `reference/tu95_layout_reference.png`: simi
 - Indicator lights or labels: Flaps UP / TO / LDG, Gear DOWN (green) / UP (off) / in transit (amber), Engine ON/OFF.
 - Warning lights: STALL, GEAR (low and slow with gear up), LOW FUEL.
 
+**Layout change (owner):** instructor box top-left, radar top-centre, instrument panel top-right (the plane flies on the left side and was hidden behind the panel). Bottom-left: PAF pilot wings badge above "AVN CDT <NAME>".
+
 **Top-centre: positional radar** (changed after chunk 1.8, owner request): an amber side-view map of the whole route showing both bases (runway, tower, hangar), the ground and the plane as a blip at its real distance and altitude (auto altitude range, sweep line). Under it: the current phase (TAKE OFF, CLIMB, CRUISE, DESCENT, APPROACH, LANDED, worked out from altitude, vertical speed and distance to the destination), km to go and progress segments.
 
 **Cockpit panel per aircraft:** the Super Mushshak keeps the grey analog panel; the F-16 has a dark glass cockpit (green speed and altitude tapes, Mach, G, vertical speed bar, three gear lights). Chosen by `AircraftData.cockpit_style`.

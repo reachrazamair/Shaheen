@@ -1,7 +1,8 @@
 extends CanvasLayer
-## Cockpit HUD: instrument panel (top-left), positional radar with the flight
-## phase (top-centre),
-## instructor message box (top-right), plus a hidden debug readout (F1).
+## Cockpit HUD: instructor message box (top-left, small so the plane stays
+## visible), positional radar with the flight phase (top-centre), instrument
+## panel (top-right; the plane flies on the left of the screen),
+## plus a hidden debug readout (F1).
 ## The instructor messages double as a tutorial so friends can play without
 ## being told the controls.
 
@@ -9,7 +10,7 @@ extends CanvasLayer
 @onready var radar: Control = $Radar
 @onready var messages: Control = $MessageBox
 @onready var debug_label: Label = $DebugLabel
-@onready var cadet_tag: Label = $CadetTag
+@onready var cadet_badge: PanelContainer = $CadetBadge
 
 ## Seconds between repeated STALL callouts.
 @export var stall_callout_cooldown_s := 4.0
@@ -37,7 +38,7 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	radar.route_m = distance_m
 	radar.departure_runway_m = from_base.runway_length_m
 	radar.destination_runway_m = to_base.runway_length_m
-	cadet_tag.text = GameState.cadet_title()
+	cadet_badge.show_cadet()
 	panel.aircraft = a
 	var g_fx := preload("res://scenes/ui/g_effect.gd").new()
 	g_fx.name = "GEffect"
