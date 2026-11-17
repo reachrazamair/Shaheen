@@ -17,7 +17,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
 ### Open questions (owner to decide after playtesting)
 - **Camera:** keep the moving look-ahead camera? Should it zoom out as speed increases?
 - **Throttle:** keep "hold ↑/↓ to move the lever" (lever stays where you leave it), or switch to a different scheme (e.g. fixed steps)?
-- Throttle response was sped up in 1.3 and again in 1.4 (thrust and drag both ×1.75: same top speed, much punchier speed changes; brakes 0.4 g → 0.6 g). Re-check feel.
+- Throttle response was sped up in 1.3 and again in 1.4 (thrust and drag both ×1.75: same top speed, much punchier speed changes; brakes 0.4 g → 0.6 g), then before 1.5 via `speed_response` = 2 (speed changes 2× faster again, same top speed/climb) and brakes 0.9 g. Re-check feel.
 - **Stall auto-recovery toggle:** right now a stall forces the nose down by itself (`stall_nose_drop_deg_s`). The owner wants an **option to turn auto-recovery on/off**. With it off, the nose should not drop on its own; the plane stays stalled (sinking, losing lift) until the player pushes the nose down. Probably a game setting (options menu, Phase 2) rather than per-aircraft data.
 - Above ~30 m altitude the ground leaves the screen and the sky is plain until clouds/parallax arrive in 1.6.
 

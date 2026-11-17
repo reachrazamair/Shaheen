@@ -192,6 +192,9 @@ func _integrate(delta: float) -> void:
 	var drag := -path * data.drag_coefficient * speed * speed * drag_mult
 	var thrust := nose * _thrust(speed)
 	var force := lift + drag + thrust + Vector2(0.0, -weight)
+	# Arcade speed response: amplify only the along-path part of the net force.
+	# Equilibria (top speed, steady climb) are unchanged; speed just gets there faster.
+	force += path * force.dot(path) * (data.speed_response - 1.0)
 
 	if on_ground:
 		if force.y > 0.0:

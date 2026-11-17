@@ -15,6 +15,10 @@ extends Resource
 ## Propeller thrust fades linearly to zero at this airspeed (kt).
 ## Set to 0 for jets (thrust stays constant with speed).
 @export var thrust_zero_speed_kt := 215.0
+## Arcade knob: how many times faster speed builds and bleeds along the flight
+## path. Doesn't change top speed, climb rate or stall speed, only how quickly
+## the plane gets there (1.0 = physically honest inertia).
+@export var speed_response := 2.0
 ## Time for the engine to spool up after E (and to wind down when shut off).
 @export var engine_spool_time_s := 1.5
 
@@ -84,8 +88,8 @@ extends Resource
 @export_group("Ground handling")
 ## Rolling resistance as a fraction of the weight on the wheels.
 @export var rolling_friction := 0.03
-## Wheel-brake deceleration in g (0.6 = 0.6 g), scaled by weight on the wheels.
-@export var brake_strength := 0.6
+## Wheel-brake deceleration in g (0.9 = 0.9 g), scaled by weight on the wheels.
+@export var brake_strength := 0.9
 
 @export_group("Limits")
 ## Gauge top end (later: overspeed warning).
