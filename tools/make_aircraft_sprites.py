@@ -9,7 +9,7 @@ aligned layers to assets/sprites/<name>_<layer>.png:
   body - the aircraft (minus gear/prop if those are split out)
   gear - landing gear cut from the art (slides up to retract), optional
   prop - propeller blades (shown while the engine runs), optional
-Front-view configs (k8_front, f16_front) make parked-aircraft scenery.
+Front-view configs (k8_front, jf17_front, f16_front) make parked-aircraft scenery.
   elevator - the tailplane cut out of the body (drawn rotating with the
              stick), optional; the hole left in the body is filled with a
              dark fuselage grey where it overlaps the fuselage
@@ -65,6 +65,12 @@ CONFIGS = {
         "src": "docs/reference/k8_front_source.png",
         "display_width": 40,   # K-8 span 9.6 m
         "erase": [(680, 0, 853, 50)],
+        "gear_regions": [], "prop": None, "points": {},
+    },
+    "jf17_front": {
+        "src": "docs/reference/jf17_front_source.png",
+        "display_width": 40,   # JF-17 span 9.45 m incl. wingtip missiles
+        "erase": [(680, 0, 846, 50)],
         "gear_regions": [], "prop": None, "points": {},
     },
     "f16_front": {
