@@ -60,32 +60,68 @@ func _draw() -> void:
 		draw_rect(Rect2(49 + i * 10, size.y - 8, 4, 2), col)
 
 
-## Placeholder instructor portrait (36x44): peaked cap, moustache, PAF blue-grey uniform.
+## Placeholder instructor portrait (38x46): flying helmet with raised tinted
+## visor, green flight suit with PAF flag patch, oxygen mask hanging loose.
+## Animated: the mouth moves while a message is typing, and he blinks.
 func _draw_portrait(o: Vector2) -> void:
 	var px := func(x: int, y: int, w: int, h: int, c: Color) -> void:
 		draw_rect(Rect2(o + Vector2(x, y), Vector2(w, h)), c)
 	var skin := Color(0.82, 0.62, 0.47)
-	var skin_dark := Color(0.68, 0.48, 0.36)
-	var uniform := Color(0.36, 0.45, 0.58)
-	var cap := Color(0.2, 0.25, 0.35)
+	var skin_dark := Color(0.66, 0.47, 0.35)
+	var suit := Color(0.36, 0.45, 0.26)
+	var suit_dark := Color(0.26, 0.33, 0.18)
+	var shell := Color(0.88, 0.88, 0.85)
+	var shell_dark := Color(0.66, 0.67, 0.66)
+	var visor := Color(0.18, 0.22, 0.32)
+	var dark := Color(0.12, 0.1, 0.09)
+	var typing := _label.visible_characters < _label.get_total_character_count()
+	var blinking := fmod(_time, 3.7) < 0.14
+	var mouth_open := typing and fmod(_time, 0.22) < 0.11
+
 	px.call(0, 0, 38, 46, Color.BLACK)
-	px.call(1, 1, 36, 44, Color(0.6, 0.72, 0.8))         # background
-	px.call(4, 34, 30, 11, uniform)                      # shoulders
-	px.call(15, 34, 8, 6, Color(0.92, 0.92, 0.9))        # shirt collar
-	px.call(18, 35, 2, 6, Color(0.15, 0.18, 0.28))       # tie
-	px.call(6, 37, 6, 2, Color(0.85, 0.75, 0.3))         # rank braid
-	px.call(26, 37, 6, 2, Color(0.85, 0.75, 0.3))
-	px.call(15, 30, 8, 5, skin_dark)                     # neck
-	px.call(11, 13, 16, 19, skin)                        # face
-	px.call(10, 18, 1, 6, skin_dark)                     # ears
-	px.call(27, 18, 1, 6, skin_dark)
-	px.call(8, 6, 22, 7, cap)                            # cap crown
-	px.call(9, 12, 21, 3, Color(0.08, 0.08, 0.1))        # visor
-	px.call(17, 7, 4, 3, Color(0.9, 0.78, 0.3))          # cap badge
-	px.call(14, 18, 3, 2, Color(0.1, 0.1, 0.1))          # eyes
-	px.call(22, 18, 3, 2, Color(0.1, 0.1, 0.1))
-	px.call(13, 16, 5, 1, Color(0.2, 0.15, 0.1))         # eyebrows
-	px.call(21, 16, 5, 1, Color(0.2, 0.15, 0.1))
-	px.call(18, 21, 2, 4, skin_dark)                     # nose
-	px.call(14, 26, 10, 2, Color(0.15, 0.1, 0.08))       # moustache
-	px.call(16, 29, 6, 1, Color(0.55, 0.3, 0.28))        # mouth
+	px.call(1, 1, 36, 44, Color(0.6, 0.72, 0.8))       # sky background
+	# Flight suit: shoulders, collar, zip, name tag, flag patch.
+	px.call(3, 35, 32, 10, suit)
+	px.call(3, 43, 32, 2, suit_dark)
+	px.call(12, 33, 5, 4, suit_dark)
+	px.call(21, 33, 5, 4, suit_dark)
+	px.call(18, 36, 1, 9, Color(0.75, 0.75, 0.72))     # zip
+	px.call(23, 38, 7, 3, Color(0.2, 0.17, 0.12))      # name tag
+	px.call(24, 39, 5, 1, Color(0.85, 0.8, 0.6))
+	px.call(6, 37, 2, 4, Color.WHITE)                  # Pakistan flag patch
+	px.call(8, 37, 4, 4, Color(0.0, 0.4, 0.2))
+	px.call(10, 38, 1, 1, Color.WHITE)
+	# Neck and face.
+	px.call(15, 30, 8, 5, skin_dark)
+	px.call(11, 14, 16, 18, skin)
+	# Helmet shell with ear cups, centre stripe and raised visor.
+	px.call(9, 3, 20, 2, shell)
+	px.call(7, 5, 24, 10, shell)
+	px.call(7, 15, 5, 12, shell)
+	px.call(26, 15, 5, 12, shell)
+	px.call(7, 24, 5, 3, shell_dark)
+	px.call(26, 24, 5, 3, shell_dark)
+	px.call(18, 3, 3, 6, Color(0.0, 0.45, 0.22))      # green helmet stripe
+	px.call(9, 9, 20, 4, visor)
+	px.call(11, 10, 3, 1, Color(0.45, 0.55, 0.7))     # visor glint
+	px.call(10, 13, 18, 1, shell_dark)                # visor housing edge
+	# Oxygen mask hanging from the right side, with its hose.
+	px.call(27, 26, 4, 5, Color(0.4, 0.42, 0.4))
+	px.call(28, 31, 1, 5, dark)
+	# Eyes (blink), eyebrows, nose, moustache, mouth (talks).
+	px.call(14, 16, 4, 1, dark)
+	px.call(21, 16, 4, 1, dark)
+	if blinking:
+		px.call(14, 19, 3, 1, skin_dark)
+		px.call(22, 19, 3, 1, skin_dark)
+	else:
+		px.call(14, 18, 3, 2, Color.WHITE)
+		px.call(22, 18, 3, 2, Color.WHITE)
+		px.call(15, 18, 2, 2, dark)
+		px.call(23, 18, 2, 2, dark)
+	px.call(18, 20, 2, 4, skin_dark)
+	px.call(14, 25, 11, 2, dark)                      # moustache
+	if mouth_open:
+		px.call(16, 27, 7, 3, Color(0.3, 0.1, 0.1))
+	else:
+		px.call(16, 28, 7, 1, Color(0.55, 0.3, 0.28))
