@@ -93,7 +93,7 @@ func _build() -> void:
 	_nav.add_child(_next)
 	box.add_child(_nav)
 
-	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   R RESTART", 8, Color.WHITE)
+	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   T FUEL TRUCK   R RESTART", 8, Color.WHITE)
 	add_child(keys)
 	keys.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	keys.offset_top = -24

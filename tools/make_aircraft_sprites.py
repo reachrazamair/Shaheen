@@ -35,19 +35,21 @@ CONFIGS = {
         "points": {"flap_hinge": (368, 126), "prop_center": (742, 173)},
     },
     "f16": {
+        # Owner's F-16D art (No. 11 Sqn "Falcons", 10805), drawn with the gear
+        # DOWN: the gear is cut to its own layer and slides up into the body.
+        # (Old retracted-gear art: docs/reference/f16d_old_sprite_source.png.)
         "src": "docs/reference/f16_sprite_source.png",
         "display_width": 115,  # world px; the F-16 is ~2x the Mushshak's length
-        "gear_regions": [],    # the art shows the gear retracted: gear is drawn in code
+        # Main gear below the fuselage; nose gear = strut column + wheel below the tank.
+        "gear_regions": [(274, 326, 249, 249), (473, 482, 255, 255), (462, 492, 270, 270)],
+        # Travel = wheel bottom up to y 245, so the main wheel hides fully in the body.
+        "gear_cut_y": 245,
         "prop": None,
-        # Points for code-drawn parts (source px): engine nozzle, gear attach points
-        # on the fuselage underside, and where the wheels must reach (below the tank).
-        "points": {"nozzle": (56, 190), "main_gear_top": (340, 262), "nose_gear_top": (476, 241),
-                   "wheel_bottom": (0, 296), "elevator_hinge": (125, 199)},
-        # All-moving tailplane, in OUTPUT texture px: outline polygon, hole fill
-        # colour, and the hole is only filled right of fill_min_x (left of it
-        # there is no fuselage behind the tailplane, just sky).
-        "elevator": {"poly": [(3, 111), (79, 110), (79, 119), (42, 126), (10, 127), (3, 125)],
-                     "fill": (66, 70, 76, 255), "fill_min_x": 13},
+        "points": {"nozzle": (50, 184), "main_wheel": (295, 0), "elevator_hinge": (128, 202),
+                   "light_landing": (477, 262)},
+        # All-moving tailplane, in OUTPUT texture px (see the f16a config).
+        "elevator": {"poly": [(0, 131), (14, 108), (78, 106), (79, 111), (52, 117), (32, 123), (13, 131)],
+                     "fill": (66, 70, 76, 255), "fill_min_x": 26},
     },
     "f16a": {
         # Owner's F-16A art (No. 9 Sqn "Griffins", 84717). Same pose and size as

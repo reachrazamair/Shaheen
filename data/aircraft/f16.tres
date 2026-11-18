@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="AircraftData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="AircraftData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
 [ext_resource type="Texture2D" path="res://assets/sprites/f16_body.png" id="2_sprite"]
 [ext_resource type="Texture2D" path="res://assets/sprites/f16_elevator.png" id="3_elev"]
+[ext_resource type="Texture2D" path="res://assets/sprites/f16_gear.png" id="4_gear"]
 
 [resource]
 script = ExtResource("1_data")
@@ -64,11 +65,11 @@ service_ceiling_m = 6000.0
 ceiling_fade_m = 2000.0
 pilot_rank = "SQN LDR"
 pilot_rank_call = "Sqn Ldr"
-light_nav_near = Vector2(262, 128)
-light_nav_far = Vector2(248, 122)
-light_tail = Vector2(6, 72)
+light_nav_near = Vector2(239, 116)
+light_nav_far = Vector2(229, 112)
+light_tail = Vector2(10, 72)
 light_beacon = Vector2(16, 4)
-light_landing = Vector2(298, 164)
+light_landing = Vector2(291, 153)
 cockpit_style = 1
 g_effects = true
 g_effect_min_speed_kt = 250.0
@@ -82,16 +83,18 @@ length_m = 15.0
 height_m = 5.0
 sprite = ExtResource("2_sprite")
 sprite_scale = 0.25
-sprite_wheel_bottom_y = 182.0
-sprite_main_wheel_x = 202.0
-sprite_gear_x = PackedFloat32Array(202, 292)
-sprite_gear_top_y = PackedFloat32Array(160, 146)
-sprite_gear_wheel_size = PackedFloat32Array(20, 16)
-sprite_nozzle = Vector2(14, 112)
+sprite_gear = ExtResource("4_gear")
+sprite_gear_travel = 33.0
+sprite_wheel_bottom_y = 175.0
+sprite_main_wheel_x = 169.0
+sprite_gear_x = PackedFloat32Array()
+sprite_gear_top_y = PackedFloat32Array()
+sprite_gear_wheel_size = PackedFloat32Array()
+sprite_nozzle = Vector2(6, 101)
 afterburner_flame_length = 260.0
 afterburner_flame_width = 30.0
 sprite_elevator = ExtResource("3_elev")
-sprite_elevator_hinge = Vector2(60, 118)
+sprite_elevator_hinge = Vector2(58, 113)
 elevator_max_deg = 20.0
 elevator_speed = 6.0
 sprite_flap_length = 0.0

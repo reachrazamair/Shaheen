@@ -33,6 +33,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
   - Second destination: **PAF Base Mushaf, Sargodha** (7 km, beyond Masroor): green plains, banyan trees, kinnow orchards, villages; F-16s on the apron, No. 9 "Griffins" and No. 29 "Aggressors" boards, blue-and-gold "Welcome to Mushaf, the Home of Eagles" monuments at both runway ends, IAF MiG-21 and Su-30 tail-section trophies. **F-16A** added (same numbers as the F-16D, own art, moving tailplane, gear in code).
   - **One shared world:** all bases stand along the route, so you can divert and land anywhere; the flight passes only at the destination chosen before take-off (else WRONG BASE). Radar shows every base. Mushaf squadron boards red and gold.
   - **Start screen in steps:** START, name, aircraft, route, day/night, FLY (BACK/NEXT).
+  - **Refuelling stop:** land at a base on the way (Masroor en route to Mushaf), engine off, T: a fuel truck drives up, hoses in, fills the tank and leaves; take off again. New F-16D art (gear-down picture, gear retracts as a layer, moving tailplane).
   - TODO (owner asked, not started): landing readability (sink-rate cue, short-final callouts, fairer nose-down rule); audio (Phase 2).
 
 ### Open questions (owner to decide after playtesting)

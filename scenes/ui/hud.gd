@@ -205,6 +205,12 @@ func _react_to_controls() -> void:
 				messages.say("Flaps %s?! UP for the cruise, F! Pay ATTENTION!" % setting, true)
 
 
+## After a refuelling stop: the fuel warnings may sound again.
+func on_refuelled() -> void:
+	_said.erase("low_fuel")
+	_said.erase("no_fuel")
+
+
 func _on_lifted_off() -> void:
 	if has_flown:
 		return

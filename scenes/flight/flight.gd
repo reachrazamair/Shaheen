@@ -11,15 +11,18 @@ extends Node2D
 ##   PREFLIGHT - on the departure runway, not yet airborne
 ##   FLYING    - airborne (also after a bounce)
 ##   ROLLOUT   - touched down on a runway, braking to a stop
+##   STOPOVER  - stopped at a base BEFORE the destination: T calls the fuel
+##               truck (engine off), then take off again for the destination
 ##   DONE      - result screen showing (landed, wrong base or crashed)
 
 signal flight_finished(result: Dictionary)
 
-enum State { PREFLIGHT, FLYING, ROLLOUT, DONE }
+enum State { PREFLIGHT, FLYING, ROLLOUT, STOPOVER, DONE }
 const GRADES := ["PERFECT", "GOOD", "FIRM", "HARD"]
 const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 const BaseScene := preload("res://scenes/world/base.tscn")
+const FuelTruck := preload("res://scenes/world/fuel_truck.gd")
 
 @export var departure: BaseData
 ## The base the player must land at (overridden by GameState.destination_path).
@@ -57,6 +60,10 @@ var _landed_on := -1            ## index into _bases during rollout
 ## Every base in the world, by distance: [threshold x (m), BaseData, node].
 ## Index 0 is the departure.
 var _bases: Array = []
+var _truck: Node2D
+## Fuel added by trucks at stopovers (kg) and where.
+var _refuelled_kg := 0.0
+var _refuelled_at: Array[String] = []
 var _worst_touchdown_fpm := 0.0
 var _overran := false
 var _nose_wheel_first := false  ## a touchdown came down slightly nose-low: one grade lower
@@ -89,6 +96,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
 		_retry()
+	elif event.is_action_pressed("refuel"):
+		_request_refuel()
 
 
 func _retry() -> void:
@@ -163,7 +172,13 @@ func runway_at(x_m: float) -> int:
 func _on_lifted_off() -> void:
 	if state == State.DONE:
 		return
-	if state == State.ROLLOUT:
+	if state == State.STOPOVER:
+		# Off again from the stopover: only the landing at the destination is graded.
+		_worst_touchdown_fpm = 0.0
+		_nose_wheel_first = false
+		_overran = false
+		hud.messages.say("Off again! Next stop %s. Clean it up and CLIMB!" % destination.short_name.capitalize(), true)
+	elif state == State.ROLLOUT:
 		hud.messages.say("You BOUNCED it, d*mn it! Hold the nose, settle it down! Gently!", true)
 	_airborne_once = true
 	state = State.FLYING
@@ -213,7 +228,70 @@ func _check_ground_roll() -> void:
 	if not on_runway and state == State.ROLLOUT:
 		_overran = true
 	if state == State.ROLLOUT and aircraft.speed_kt < 1.0:
-		_finish_landing()
+		if _is_stopover(_landed_on):
+			_begin_stopover()
+		else:
+			_finish_landing()
+
+
+# --- Refuelling stop ---
+
+## A base between the departure and the destination: landing there is a
+## stop (refuel with T, then take off again), not the end of the flight.
+func _is_stopover(i: int) -> bool:
+	return i > 0 and _bases[i][1] != destination and _bases[i][0] < route_distance_m
+
+
+func _begin_stopover() -> void:
+	state = State.STOPOVER
+	hud.messages.say("Down at %s. Engine OFF with E, then T for the fuel truck. Then on to %s!" % [
+			_bases[_landed_on][1].short_name.capitalize(), destination.short_name.capitalize()], true)
+
+
+func _request_refuel() -> void:
+	if state == State.DONE or _truck != null:
+		return
+	var a := aircraft
+	if state != State.STOPOVER:
+		if a.on_ground and _airborne_once and runway_at(a.pos_m.x) >= 0:
+			hud.messages.say("Fuel truck? Stop the aircraft FIRST!", true)
+		return
+	if a.speed_kt > 1.0:
+		hud.messages.say("Fuel truck? Stop the aircraft FIRST!", true)
+	elif a.engine_on or a.engine_rpm > 0.01:
+		hud.messages.say("Engine OFF first, E! You want to blow the truck up?!", true)
+	elif a.fuel_kg >= a.data.fuel_capacity_kg - 0.5:
+		hud.messages.say("Tanks are already FULL. Start up and GO!", true)
+	else:
+		_truck = FuelTruck.new()
+		_truck.aircraft = a
+		_truck.camera = camera
+		add_child(_truck)
+		move_child(_truck, aircraft.get_index())     # drawn behind the aircraft
+		a.controls_enabled = false
+		hud.messages.say("Fuel truck's coming. Sit still and don't touch ANYTHING!")
+		_truck.fuelled.connect(_on_fuelled)
+		_truck.hose_stowed.connect(_on_hose_stowed)
+		_truck.finished.connect(_on_truck_gone)
+
+
+func _on_fuelled() -> void:
+	_refuelled_kg += _truck.added_kg
+	var here: String = _bases[_landed_on][1].short_name.capitalize()
+	if not _refuelled_at.has(here):
+		_refuelled_at.append(here)
+	hud.on_refuelled()
+	hud.messages.say("Tanks FULL. Hose coming off. Hands OFF until it's clear!", true)
+
+
+func _on_hose_stowed() -> void:
+	if state == State.STOPOVER:
+		aircraft.controls_enabled = true
+		hud.messages.say("Hose is clear. E, start up, and get to %s. GO!" % destination.short_name.capitalize(), true)
+
+
+func _on_truck_gone() -> void:
+	_truck = null
 
 
 func _grade_for(fpm: float) -> int:
@@ -250,6 +328,8 @@ func _finish_landing() -> void:
 		result["grade"] = GRADES[g]
 		result["title"] = GRADES[g] + " LANDING"
 		reasons.push_front("Landed at %s." % destination.display_name)
+		for b in _refuelled_at:
+			reasons.append("Refuelled at %s." % b)
 		result["reasons"] = reasons
 		var praise := ["Perfect. Well done, %s. Don't let it go to your head.", "Good landing, %s. Not bad. Not bad at all.",
 				"Firm, %s. FLARE more next time! Again!", "HARD landing, %s! You want to break my aircraft?!"]
@@ -285,7 +365,7 @@ func _crash(reason: String, fpm := -1.0) -> void:
 func _base_result() -> Dictionary:
 	return {
 		"time_s": flight_time_s,
-		"fuel_used_kg": aircraft.data.fuel_capacity_kg - aircraft.fuel_kg,
+		"fuel_used_kg": aircraft.data.fuel_capacity_kg - aircraft.fuel_kg + _refuelled_kg,
 		"fuel_capacity_kg": aircraft.data.fuel_capacity_kg,
 	}
 
