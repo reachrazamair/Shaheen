@@ -24,6 +24,12 @@ const STEP_TITLES := ["", "ENTER YOUR NAME", "CHOOSE YOUR AIRCRAFT", "CHOOSE YOU
 const SELECTED_COLOR := Color(1.0, 0.82, 0.35)
 const INK := Color(0.08, 0.15, 0.2)
 
+## Bottom-right aircraft picture: every aircraft is drawn this wide, with its
+## right edge and its lowest pixel at these screen positions.
+@export var preview_width := 150.0
+@export var preview_right := 620.0
+@export var preview_bottom := 312.0
+
 var _step := Step.START
 var _pages: Array[Control] = []
 var _step_label: Label
@@ -60,10 +66,8 @@ func _build() -> void:
 	add_child(backdrop)
 	_preview = TextureRect.new()
 	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_preview.stretch_mode = TextureRect.STRETCH_SCALE
 	_preview.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	_preview.position = Vector2(470, 268)
-	_preview.size = Vector2(150, 50)
 	add_child(_preview)
 
 	var box := VBoxContainer.new()
@@ -221,8 +225,26 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 
 func _select_aircraft(path: String) -> void:
 	GameState.aircraft_path = path
-	_preview.texture = GameState.aircraft_data().sprite
+	_set_preview(GameState.aircraft_data().sprite)
 	_update_pilot_label()
+
+
+## Bottom-right picture of the chosen aircraft: cropped to the visible art and
+## scaled to the same width for every aircraft, standing on the same line (so
+## same-length aircraft like the two F-16s show at the same size, whatever
+## empty space their textures have).
+func _set_preview(tex: Texture2D) -> void:
+	var img := tex.get_image()
+	if img.is_compressed():
+		img.decompress()
+	var used := Rect2(img.get_used_rect())
+	var crop := AtlasTexture.new()
+	crop.atlas = tex
+	crop.region = used
+	_preview.texture = crop
+	var h := preview_width * used.size.y / maxf(used.size.x, 1.0)
+	_preview.size = Vector2(preview_width, h)
+	_preview.position = Vector2(preview_right - preview_width, preview_bottom - h)
 
 
 func _update_pilot_label() -> void:
