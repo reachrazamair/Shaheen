@@ -12,7 +12,8 @@ extends Node
 @export var aircraft: Aircraft
 
 @export_group("Mix (dB)")
-## Added to every sound (later: the volume slider in the options).
+## Added to every sound of the aircraft (a mix trim; players set their own
+## level with the Master / Engine / Effects sliders in the pause menu).
 @export var master_volume_db := 0.0
 ## Rushing air at the aircraft's max speed (grows with speed squared).
 @export var wind_volume_db := -12.0
@@ -56,9 +57,9 @@ var _wrecked := false
 func _ready() -> void:
 	assert(aircraft != null, "AircraftAudio needs the aircraft")
 	var jet := aircraft.data.engine_sound == 1
-	_engine = _loop(SoundSynth.jet_whine() if jet else SoundSynth.piston())
-	_roar = _loop(SoundSynth.roar()) if jet else null
-	_ab = _loop(SoundSynth.afterburner()) if aircraft.data.afterburner_thrust_n > 0.0 else null
+	_engine = _loop(SoundSynth.jet_whine() if jet else SoundSynth.piston(), &"Engine")
+	_roar = _loop(SoundSynth.roar(), &"Engine") if jet else null
+	_ab = _loop(SoundSynth.afterburner(), &"Engine") if aircraft.data.afterburner_thrust_n > 0.0 else null
 	_wind = _loop(SoundSynth.roar())
 	_rumble = _loop(SoundSynth.roar())
 	_horn = _loop(SoundSynth.stall_horn())
@@ -134,8 +135,10 @@ func _on_wrecked(severity: float) -> void:
 
 # --- Helpers ---
 
-func _loop(stream: AudioStream) -> AudioStreamPlayer:
+## Engine sounds go to the "Engine" bus, everything else to "Effects".
+func _loop(stream: AudioStream, bus := &"Effects") -> AudioStreamPlayer:
 	var p := _one_shot(stream)
+	p.bus = bus
 	_loops.append(p)
 	_vol[p] = 0.0
 	return p
@@ -144,6 +147,7 @@ func _loop(stream: AudioStream) -> AudioStreamPlayer:
 func _one_shot(stream: AudioStream) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
 	p.stream = stream
+	p.bus = &"Effects"
 	add_child(p)
 	return p
 

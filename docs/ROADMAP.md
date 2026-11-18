@@ -47,7 +47,8 @@ Detailed in `PROTOTYPE_SPEC.md`.
 One chunk at a time, in this order (owner chose sound first).
 - [x] 2.1 Sound, generated in code (no audio files): engine per aircraft type (piston buzz for the Mushshak; turbine whine + roar for the jets, afterburner rumble), wind with airspeed, tyre rumble on the ground, touchdown thump and squeal, stall horn, gear warning, gear motor and lock clunk, crash.
   - Done 2026-11-18: `scripts/sound_synth.gd` builds every sound once per session (~135 ms on the dev PC); `scenes/aircraft/aircraft_audio.gd` drives them from the aircraft state. Per-aircraft engine numbers in AircraftData "Sound", the rest of the mix in aircraft_audio.gd exports. Not yet heard in a browser (web uses Godot's sample playback). Owner: F-16 too whiny, so its engine note lowered (pitch 0.45-0.8) and the whine's 3 kHz overtone softened.
-- [ ] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
+- [x] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
+  - Done 2026-11-18: `scenes/ui/pause_menu.gd` (added by flight.gd, off once the flight ends). Audio buses Master / Engine / Effects (`default_bus_layout.tres`); slider volumes saved by GameState to `user://settings.cfg`. A short thump plays when a slider is let go, so the level can be heard while paused.
 - [ ] 2.3 Landing readability: sink-rate cue on the HUD, short-final callouts, fairer nose-down rule.
 - [x] 2.4 PAF liveries: already in the aircraft art (owner, 2026-11-18); nothing to do.
 - [ ] 2.5 Gamepad support.

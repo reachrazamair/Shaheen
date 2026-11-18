@@ -61,6 +61,7 @@ var _landed_on := -1            ## index into _bases during rollout
 ## Index 0 is the departure.
 var _bases: Array = []
 var _truck: Node2D
+var _pause_menu: PauseMenu
 ## Fuel added by trucks at stopovers (kg) and where.
 var _refuelled_kg := 0.0
 var _refuelled_at: Array[String] = []
@@ -93,6 +94,10 @@ func _ready() -> void:
 	var audio := AircraftAudio.new()
 	audio.aircraft = aircraft
 	add_child(audio)
+	_pause_menu = PauseMenu.new()
+	add_child(_pause_menu)
+	_pause_menu.restart_pressed.connect(_retry)
+	_pause_menu.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	result_screen.retry_pressed.connect(_retry)
 	result_screen.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_theme()
@@ -377,6 +382,7 @@ func _base_result() -> Dictionary:
 
 func _end(result: Dictionary) -> void:
 	state = State.DONE
+	_pause_menu.enabled = false
 	aircraft.controls_enabled = false
 	hud.flight_over = true
 	flight_finished.emit(result)

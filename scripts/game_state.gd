@@ -1,8 +1,12 @@
 extends Node
 ## Autoload "GameState": small bits of state that live across scenes
-## (the flight scene is reloaded on retry). Not saved to disk yet.
+## (the flight scene is reloaded on retry). Only the options (volumes) are
+## saved to disk (user://settings.cfg: browser storage on the web).
 
 const MAX_NAME_LENGTH := 16
+const SETTINGS_PATH := "user://settings.cfg"
+## Audio buses with a volume slider (default_bus_layout.tres), in slider order.
+const VOLUME_BUSES := ["Master", "Engine", "Effects"]
 
 ## Aircraft the player can choose on the start screen (in unlock order).
 const AIRCRAFT := [
@@ -29,6 +33,43 @@ var aircraft_path: String = AIRCRAFT[0]
 var destination_path: String = DESTINATIONS[0]
 ## Time of day chosen on the start screen.
 var night := false
+## Slider volume per bus, 0..1 (0 = muted).
+var volumes := {"Master": 1.0, "Engine": 1.0, "Effects": 1.0}
+
+
+func _ready() -> void:
+	load_settings()
+
+
+func load_settings() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) == OK:
+		for bus in VOLUME_BUSES:
+			volumes[bus] = clampf(float(cfg.get_value("audio", bus, volumes[bus])), 0.0, 1.0)
+	for bus in VOLUME_BUSES:
+		_apply_volume(bus)
+
+
+func save_settings() -> void:
+	var cfg := ConfigFile.new()
+	for bus in VOLUME_BUSES:
+		cfg.set_value("audio", bus, volumes[bus])
+	cfg.save(SETTINGS_PATH)
+
+
+## Sets a bus volume (0..1) right away; call save_settings() to keep it.
+func set_volume(bus: String, v: float) -> void:
+	volumes[bus] = clampf(v, 0.0, 1.0)
+	_apply_volume(bus)
+
+
+func _apply_volume(bus: String) -> void:
+	var i := AudioServer.get_bus_index(bus)
+	if i < 0:
+		return
+	var v: float = volumes[bus]
+	AudioServer.set_bus_mute(i, v <= 0.0)
+	AudioServer.set_bus_volume_db(i, linear_to_db(maxf(v, 0.0001)))
 
 
 ## The chosen aircraft's data (rank, etc.).

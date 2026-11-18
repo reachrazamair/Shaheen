@@ -55,3 +55,7 @@ Original reference layout (TU-95), kept for the intent; positions superseded by 
 - **Bottom ~60%: the world.** A wide, fairly **zoomed-out** side view: the plane is **small** relative to big base buildings (hangars, a long terminal/admin block, control tower), with green hills, clouds and a pale sky behind. Ground and runway along the bottom.
 - The panels are part of the UI layer (`CanvasLayer`) and stay fixed. The world scrolls underneath.
 - Prototype: **one shared panel design** for both aircraft, with gauge ranges taken from the aircraft data. Different cockpit panels per aircraft come later.
+
+## Pause menu (chunk 2.2)
+- Esc in a flight pauses the whole tree and shows `PauseMenu` (`scenes/ui/pause_menu.gd`, CanvasLayer 25, process mode ALWAYS): RESUME (ESC), RESTART (R), MAIN MENU; VOLUME sliders Master / Engine / Effects (0..1, 0 = muted); KEYS list (two pairs per row, keys in amber). Esc again or RESUME carries on.
+- Disabled once the flight ends (result screen has its own buttons). Volumes live in `GameState.volumes`, applied to the audio buses at start-up and saved to `user://settings.cfg` when the menu closes.
