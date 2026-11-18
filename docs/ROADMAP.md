@@ -2,7 +2,7 @@
 
 Work proceeds in small chunks. Only work on the current chunk. Tick boxes when done. Later phases are rough and will be detailed into chunks when we get there.
 
-## Phase 1: Prototype (current)
+## Phase 1: Prototype (done)
 Detailed in `PROTOTYPE_SPEC.md`.
 - [x] 1.1 Project setup (settings, folders, input map, git)
 - [x] 1.2 Plane on a runway (throttle, brakes, rolling, camera, debug text)
@@ -27,14 +27,14 @@ Detailed in `PROTOTYPE_SPEC.md`.
   - Fourth follow-up: the aircraft pivots on its main wheels on the ground (only the nose wheel lifts); pitch limits removed (loops/inverted possible, lift model covers any angle incl. negative stalls); tail-strike and upside-down touchdowns crash.
   - Third follow-up: instructor box and instrument panel swapped (instructor top-left, panel top-right) so the plane isn't hidden when climbing; bottom-left name plate now shows the PAF pilot wings badge above "AVN CDT" and the name.
   - Second follow-up: crashes shatter the airframe into many small irregular shards that slide to a stop (no bounce); big crashes explode (fireball, debris, ground fire), small ones scrape along with dust and thin smoke; nose lifts gradually on the takeoff roll from 70% of rotate speed; F-16 moving tailplane (elevator) follows the pitch keys; F-16 blackout (high positive G) and redout (strong negative G) screen effects above 250 kt.
-- [ ] 1.9 Tuning pass and web deploy to Vercel for friends
+- [x] 1.9 Tuning pass and web deploy to Vercel for friends (closed 2026-11-18 when the owner started Phase 2; leftovers moved to 2.3 and 2.6)
   - Web deploy done: https://shaheen-green.vercel.app (2026-11-17). Tuning pass from friends' feedback still to do.
   - Tuning so far: instructor English-only (censored curses), black helmet with visor down; firm-but-legal landings make a small realistic hop (one per landing), smooth landings don't, too hard still crashes. Takeoff pitch limit removed (any pitch, any time); over-rotating near the runway = tail-strike crash, with a NOSE TOO HIGH warning. Landings made forgiving (owner: crashing on every landing): slight nose-wheel-first = grade penalty not crash, nose lowers itself after touchdown so brakes work, higher gear limits, crashes at landing speed are scrapes not explosions.
   - Second destination: **PAF Base Mushaf, Sargodha** (7 km, beyond Masroor): green plains, banyan trees, kinnow orchards, villages; F-16s on the apron, No. 9 "Griffins" and No. 29 "Aggressors" boards, blue-and-gold "Welcome to Mushaf, the Home of Eagles" monuments at both runway ends, IAF MiG-21 and Su-30 tail-section trophies. **F-16A** added (same numbers as the F-16D, own art, moving tailplane, gear in code).
   - **One shared world:** all bases stand along the route, so you can divert and land anywhere; the flight passes only at the destination chosen before take-off (else WRONG BASE). Radar shows every base. Mushaf squadron boards red and gold.
   - **Start screen in steps:** START, name, aircraft, route, day/night, FLY (BACK/NEXT).
   - **Refuelling stop:** land at a base on the way (Masroor en route to Mushaf), engine off, T: a fuel truck drives up, hoses in, fills the tank and leaves; take off again. New F-16D art (gear-down picture, gear retracts as a layer, moving tailplane).
-  - TODO (owner asked, not started): landing readability (sink-rate cue, short-final callouts, fairer nose-down rule); audio (Phase 2).
+  - Moved to Phase 2: landing readability (2.3), audio (2.1), friends' feedback tuning (2.6).
 
 ### Open questions (owner to decide after playtesting)
 - **Camera:** keep the moving look-ahead camera? Should it zoom out as speed increases?
@@ -43,15 +43,16 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - **Stall behaviour (decided):** owner chose NO auto nose-drop: the aircraft keeps its attitude and falls until the player pushes the nose down (`stall_nose_drop_deg_s` = 0 for both aircraft). An options toggle for auto-recovery could still come in Phase 2.
 - **Gear on the Super Mushshak:** the real aircraft has fixed gear; the owner asked for working gear up/down, so `retractable_gear = true` in `super_mushshak.tres` (one flag to flip back).
 
-**Everything below Phase 1 is on hold.** Don't start any of it until the owner says so. It's listed only so the prototype code stays easy to extend.
+## Phase 2: Feedback and polish (current, started 2026-11-18)
+One chunk at a time, in this order (owner chose sound first).
+- [ ] 2.1 Sound, generated in code (no audio files): engine per aircraft type (piston buzz for the Mushshak; turbine whine + roar for the jets, afterburner rumble), wind with airspeed, tyre rumble on the ground, touchdown thump and squeal, stall horn, gear warning, gear motor and lock clunk, crash.
+- [ ] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
+- [ ] 2.3 Landing readability: sink-rate cue on the HUD, short-final callouts, fairer nose-down rule.
+- [ ] 2.4 PAF liveries: PAF colour schemes with the Pakistan flag and markings (Super Mushshak first, then the F-16s and the Mirage). Mushshak reference: `docs/reference/super_mushshak_livery_reference.png`.
+- [ ] 2.5 Gamepad support.
+- [ ] 2.6 Friends' feedback: gather it from the live build, tune controls and flight feel, settle the open questions above.
 
-## Phase 2: Feedback and polish
-- Gather friends' feedback. Tune controls and flight feel.
-- Real pixel art for the two aircraft and the two bases (replace placeholders).
-  - TODO (owner): aircraft must wear PAF colour schemes with the Pakistan flag and markings (Super Mushshak first, then F-16). Mushshak reference: `docs/reference/super_mushshak_livery_reference.png`.
-- Sound: engine per aircraft type, touchdown, warnings (stall horn, gear).
-- Pause menu, simple options (volume, show key list).
-- Gamepad support.
+**Everything below Phase 2 is on hold.** Don't start any of it until the owner says so. It's listed only so the code stays easy to extend.
 
 ## Phase 3: Career mode
 - Main menu, career save (local, `user://`).
