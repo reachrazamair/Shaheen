@@ -105,8 +105,9 @@ extends Resource
 ## nose keeps coming up at this rate to the takeoff attitude (tail-strike
 ## limit - 2 deg), so the aircraft flies off by itself.
 @export var auto_rotate_rate_deg_s := 4.0
-## Landing roll: below this fraction of rotate speed the nose can't be held
-## up any more and comes down gently at derotate_rate_deg_s.
+## Landing roll: the nose comes down by itself at derotate_rate_deg_s unless
+## the player holds nose-up; below this fraction of rotate speed it comes down
+## whatever the stick says. (Nose down = weight on the wheels = brakes bite.)
 @export var nose_down_fraction := 0.75
 @export var derotate_rate_deg_s := 5.0
 ## Below rotate speed (and on the slow part of the landing roll) the tail
@@ -140,8 +141,11 @@ extends Resource
 @export var bounce_from_fpm := 500.0
 @export var bounce_height_min_m := 0.3
 @export var bounce_height_max_m := 1.2
-## Touching down with the nose more than this far below the horizon = crash.
+## Touching down with the nose more than this far below the horizon = the nose
+## wheel hits first: one grade lower (not a crash).
 @export var max_nose_down_touchdown_deg := 2.0
+## Nose more than this far down at touchdown = slammed onto the nose wheel = crash.
+@export var nose_first_crash_deg := 5.0
 ## Running off the end of a runway (or off it onto grass) faster than this = crash;
 ## slower = overrun penalty.
 @export var overrun_crash_speed_kt := 15.0

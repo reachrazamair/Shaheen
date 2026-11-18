@@ -51,6 +51,7 @@ var _airborne_once := false
 var _landed_on := ""            ## "departure" / "destination" during rollout
 var _worst_touchdown_fpm := 0.0
 var _overran := false
+var _nose_wheel_first := false  ## a touchdown came down slightly nose-low: one grade lower
 
 
 func _ready() -> void:
@@ -137,11 +138,14 @@ func _on_touched_down(vertical_speed_ms: float) -> void:
 		_crash("Hit the ground upside down.", fpm)
 	elif rad_to_deg(aircraft.touchdown_pitch) > d.tail_strike_pitch_deg:
 		_crash("Tail strike: the nose was far too high at touchdown.", fpm)
-	elif rad_to_deg(aircraft.touchdown_pitch) < -d.max_nose_down_touchdown_deg:
-		_crash("Nose-first landing: flare before touchdown.", fpm)
+	elif rad_to_deg(aircraft.touchdown_pitch) < -d.nose_first_crash_deg:
+		_crash("Slammed it onto the nose wheel: flare before touchdown.", fpm)
 	elif fpm > d.hard_touchdown_fpm:
 		_crash("Far too hard: %d ft/min. The gear collapsed." % roundi(fpm), fpm)
 	else:
+		if rad_to_deg(aircraft.touchdown_pitch) < -d.max_nose_down_touchdown_deg:
+			_nose_wheel_first = true
+			hud.messages.say("NOSE WHEEL FIRST?! Main wheels first, raise the nose before touchdown!", true)
 		state = State.ROLLOUT
 		_landed_on = where
 
@@ -188,6 +192,9 @@ func _finish_landing() -> void:
 	else:
 		var g := _grade_for(_worst_touchdown_fpm)
 		var reasons: Array[String] = []
+		if _nose_wheel_first:
+			g = mini(g + 1, GRADES.size() - 1)
+			reasons.append("Nose wheel touched first (one grade lower).")
 		if _overran:
 			g = mini(g + 1, GRADES.size() - 1)
 			reasons.append("Rolled past the runway end (one grade lower).")
@@ -208,7 +215,8 @@ func _crash(reason: String, fpm := -1.0) -> void:
 	# (explosion, shards blasted out), below that the wreck shatters and scrapes along.
 	var d := aircraft.data
 	var sink := maxf(fpm, 0.0)
-	var severity := clampf(sink / (2.0 * d.hard_touchdown_fpm) + aircraft.speed_kt / (4.0 * d.stall_speed_kt), 0.0, 1.0)
+	var severity := clampf(sink / (3.0 * d.hard_touchdown_fpm)
+			+ maxf(aircraft.speed_kt / d.stall_speed_kt - 1.0, 0.0) * 0.5, 0.0, 1.0)
 	aircraft.crash(severity)
 	var fx := Node2D.new()
 	fx.set_script(CrashEffect)

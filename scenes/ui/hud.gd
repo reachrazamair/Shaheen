@@ -218,7 +218,7 @@ func _on_lifted_off() -> void:
 func _on_touched_down(vertical_speed_ms: float) -> void:
 	_last_touchdown_fpm = vertical_speed_ms * WorldScale.M_TO_FT * 60.0
 	if has_flown and not flight_over:
-		messages.say("%d ft/min. BRAKES! Hold B! Stop it on the runway!" % absi(roundi(_last_touchdown_fpm)), true)
+		messages.say("%d ft/min. Let the nose down, then BRAKES! Hold B! Stop it on the runway!" % absi(roundi(_last_touchdown_fpm)), true)
 
 
 func _update_debug() -> void:

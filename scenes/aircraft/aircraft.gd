@@ -242,6 +242,9 @@ func _update_pitch(delta: float) -> void:
 		# Optional nose-drop tendency while stalled (0 for both aircraft: the
 		# owner wants it to keep its attitude). The stick always works.
 		target_rate -= deg_to_rad(data.stall_nose_drop_deg_s)
+	if on_ground and landing_roll and stick <= 0.0:
+		# After touchdown the nose comes down by itself unless held up.
+		target_rate = minf(target_rate, -deg_to_rad(data.derotate_rate_deg_s))
 	var takeoff_attitude := deg_to_rad(data.max_ground_pitch_deg - 2.0)
 	if on_ground and not landing_roll and stick >= 0.0 and pitch > deg_to_rad(1.0) \
 			and speed >= rotate_ms and pitch < takeoff_attitude:
