@@ -46,7 +46,7 @@ static func jet_whine() -> AudioStreamWAV:
 		out.resize(n)
 		for i in n:
 			var t := float(i) / RATE
-			out[i] = 0.5 * sin(TAU * 1500.0 * t) + 0.3 * sin(TAU * 1730.0 * t) + 0.15 * sin(TAU * 3000.0 * t)
+			out[i] = 0.5 * sin(TAU * 1500.0 * t) + 0.3 * sin(TAU * 1730.0 * t) + 0.04 * sin(TAU * 3000.0 * t)
 		return _wav(out, true))
 
 

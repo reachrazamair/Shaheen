@@ -46,10 +46,10 @@ Detailed in `PROTOTYPE_SPEC.md`.
 ## Phase 2: Feedback and polish (current, started 2026-11-18)
 One chunk at a time, in this order (owner chose sound first).
 - [x] 2.1 Sound, generated in code (no audio files): engine per aircraft type (piston buzz for the Mushshak; turbine whine + roar for the jets, afterburner rumble), wind with airspeed, tyre rumble on the ground, touchdown thump and squeal, stall horn, gear warning, gear motor and lock clunk, crash.
-  - Done 2026-11-18: `scripts/sound_synth.gd` builds every sound once per session (~135 ms on the dev PC); `scenes/aircraft/aircraft_audio.gd` drives them from the aircraft state. Per-aircraft engine numbers in AircraftData "Sound", the rest of the mix in aircraft_audio.gd exports. Not yet heard in a browser (web uses Godot's sample playback).
+  - Done 2026-11-18: `scripts/sound_synth.gd` builds every sound once per session (~135 ms on the dev PC); `scenes/aircraft/aircraft_audio.gd` drives them from the aircraft state. Per-aircraft engine numbers in AircraftData "Sound", the rest of the mix in aircraft_audio.gd exports. Not yet heard in a browser (web uses Godot's sample playback). Owner: F-16 too whiny, so its engine note lowered (pitch 0.45-0.8) and the whine's 3 kHz overtone softened.
 - [ ] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
 - [ ] 2.3 Landing readability: sink-rate cue on the HUD, short-final callouts, fairer nose-down rule.
-- [ ] 2.4 PAF liveries: PAF colour schemes with the Pakistan flag and markings (Super Mushshak first, then the F-16s and the Mirage). Mushshak reference: `docs/reference/super_mushshak_livery_reference.png`.
+- [x] 2.4 PAF liveries: already in the aircraft art (owner, 2026-11-18); nothing to do.
 - [ ] 2.5 Gamepad support.
 - [ ] 2.6 Friends' feedback: gather it from the live build, tune controls and flight feel, settle the open questions above.
 
