@@ -42,8 +42,6 @@ var aircraft: Aircraft
 @export_group("Layout")
 @export var gauge_radius := 25.0
 @export var gauge_centres := PackedVector2Array([Vector2(33, 36), Vector2(92, 36), Vector2(151, 36)])
-## Below this height with retractable gear still up and slow: GEAR warning.
-@export var gear_warning_height_ft := 1000.0
 
 var _font: Font
 var _time := 0.0
@@ -233,9 +231,7 @@ func _draw_status(p: Vector2) -> void:
 func _draw_warnings(p: Vector2) -> void:
 	var a := aircraft
 	var blink := fmod(_time, 0.5) < 0.3
-	var gear_warn := a.data.retractable_gear and not a.on_ground and a.gear_pos < 1.0 \
-			and a.altitude_ft < gear_warning_height_ft \
-			and a.speed_kt < a.data.stall_speed_kt * 1.5 and a.vertical_speed_fpm < 0.0
+	var gear_warn := a.gear_warning
 	var fuel_text := "NO FUEL" if a.fuel_kg <= 0.0 else "FUEL"
 	var items := [
 		["STALL", a.stalled and blink, lamp_red],

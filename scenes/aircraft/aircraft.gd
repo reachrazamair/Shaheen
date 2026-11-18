@@ -23,6 +23,8 @@ signal touched_down(vertical_speed_ms: float)
 signal lifted_off
 ## The tail hit the runway (over-rotation on the ground or just after lift-off).
 signal tail_struck
+## The aircraft was wrecked (severity 0..1, see crash()).
+signal wrecked(severity: float)
 
 const FLAP_NAMES := ["UP", "TO", "LDG"]
 ## Crash severity (0..1) from which a crash is "big": explosion, shards blasted out.
@@ -35,6 +37,8 @@ const BIG_CRASH_SEVERITY := 0.6
 @export var throttle_rate := 1.6
 ## Start the flight with the engine already running (handy for testing).
 @export var start_with_engine_on := false
+## Below this height with retractable gear still up, slow and descending: GEAR warning.
+@export var gear_warning_height_ft := 1000.0
 
 # Flight state
 var throttle := 0.0                ## 0..1 lever position
@@ -108,6 +112,12 @@ var gear_in_transit: bool:
 var airbrake_out: bool:
 	get: return braking and not on_ground
 ## 0..1: how far into the afterburner range the throttle is (0 if none / engine not up).
+## GEAR warning (light and beeper): retractable gear not down, low, slow and descending.
+var gear_warning: bool:
+	get:
+		return data.retractable_gear and not on_ground and gear_pos < 1.0 \
+				and altitude_ft < gear_warning_height_ft \
+				and speed_kt < data.stall_speed_kt * 1.5 and vertical_speed_fpm < 0.0
 var afterburner: float:
 	get:
 		if data.afterburner_thrust_n <= 0.0 or engine_rpm < 0.95:
@@ -462,6 +472,7 @@ func crash(severity := 0.5) -> void:
 	if data.sprite:
 		_build_fragments(severity, impact_vel, crash_pitch)
 	queue_redraw()
+	wrecked.emit(severity)
 
 
 func _build_fragments(severity: float, impact_vel: Vector2, crash_pitch: float) -> void:

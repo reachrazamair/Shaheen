@@ -174,6 +174,21 @@ extends Resource
 @export var g_effect_onset := 0.8
 @export var g_effect_recovery := 1.2
 
+@export_group("Sound")
+## Engine sound, made in code (scripts/sound_synth.gd): Piston = firing pulses
+## and propeller buzz; Jet = turbine whine over a roar, plus afterburner rumble.
+@export_enum("Piston", "Jet") var engine_sound := 0
+## Engine note (playback pitch) at idle and at full power; the note follows
+## engine RPM while it spools up or winds down.
+@export var engine_pitch_idle := 0.6
+@export var engine_pitch_full := 1.25
+## Engine loudness at full power (dB).
+@export var engine_volume_db := -6.0
+## How much quieter the engine is at idle than at full power (dB).
+@export var engine_idle_drop_db := 10.0
+## Afterburner rumble at full afterburner (dB). Ignored without an afterburner.
+@export var afterburner_volume_db := -3.0
+
 @export_group("Pilot")
 ## Rank shown with the player's name (badge, result screen) and in radio calls.
 @export var pilot_rank := "AVN CDT"

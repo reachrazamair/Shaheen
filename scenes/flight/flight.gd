@@ -88,6 +88,11 @@ func _ready() -> void:
 	aircraft.lifted_off.connect(_on_lifted_off)
 	aircraft.touched_down.connect(_on_touched_down)
 	aircraft.tail_struck.connect(_on_tail_struck)
+	# Sound: added after the landing judge's connections, so a touchdown that
+	# crashes is already marked crashed when the audio hears it.
+	var audio := AircraftAudio.new()
+	audio.aircraft = aircraft
+	add_child(audio)
 	result_screen.retry_pressed.connect(_retry)
 	result_screen.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_theme()
