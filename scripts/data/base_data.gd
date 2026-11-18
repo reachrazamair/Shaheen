@@ -8,6 +8,10 @@ extends Resource
 ## Short name for the HUD and radio calls (e.g. "PESHAWAR").
 @export var short_name := "BASE"
 @export var runway_length_m := 1200.0
+## Distance from the departure runway threshold (Risalpur, always the start for
+## now) to this base's threshold, compressed: Masroor 5 km (~1.5 min in the
+## Mushshak), Mushaf 6.5 km (~2 min). 0 = use the flight scene's default.
+@export var route_distance_m := 0.0
 
 @export_group("Buildings")
 @export var hangar_count := 3
@@ -45,13 +49,24 @@ extends Resource
 ## Squadron boards on the apron: text (two lines split by "|") and position.
 @export var squadron_boards := PackedStringArray()
 @export var squadron_board_x_m := PackedFloat32Array()
-## Big welcome board (lines), placed welcome_sign_x_m from the runway start
+## Big welcome board (lines), one at each welcome_sign_x_m from the runway start
 ## (negative = before the threshold; past runway_length_m = beyond the far end). Empty = none.
 @export var welcome_sign := PackedStringArray()
-@export var welcome_sign_x_m := -160.0
+@export var welcome_sign_x_m := PackedFloat32Array([-160.0])
+## 0 = PAF green board with a white frame (Masroor); 1 = dark-blue stone
+## monument with a gold key-pattern border and a round crest (Mushaf gate sign).
+@export_enum("Green board", "Blue monument") var welcome_sign_style := 0
+## Captured-aircraft displays on plinths (scenery): kinds "mig21" (tail
+## section) and "su30" (twin-fin tail section), at trophy_x_m. The apron
+## leaves a gap around each one.
+@export var trophies := PackedStringArray()
+@export var trophy_x_m := PackedFloat32Array()
+## Big banyan trees on the base grounds (drawn behind the buildings), x in metres.
+@export var banyan_x_m := PackedFloat32Array()
 
 @export_group("Landmarks")
 ## Background landmarks seen while flying in (scenes/world/landmarks.gd LAYOUT),
 ## e.g. Karachi: sea, port_cranes, teen_talwar, bahria_icon, mazar_e_quaid,
-## masjid_e_tooba, skyline. Scenery only.
+## masjid_e_tooba, skyline. Sargodha plains: fields, orchard, banyan, village.
+## Scenery only.
 @export var landmarks := PackedStringArray()

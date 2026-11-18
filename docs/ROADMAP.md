@@ -30,6 +30,7 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
   - Web deploy done: https://shaheen-green.vercel.app (2026-11-17). Tuning pass from friends' feedback still to do.
   - Tuning so far: instructor English-only (censored curses), black helmet with visor down; firm-but-legal landings make a small realistic hop (one per landing), smooth landings don't, too hard still crashes. Takeoff pitch limit removed (any pitch, any time); over-rotating near the runway = tail-strike crash, with a NOSE TOO HIGH warning. Landings made forgiving (owner: crashing on every landing): slight nose-wheel-first = grade penalty not crash, nose lowers itself after touchdown so brakes work, higher gear limits, crashes at landing speed are scrapes not explosions.
+  - Second destination: **PAF Base Mushaf, Sargodha** (6.5 km, chosen on the start screen next to Masroor): green plains, banyan trees, kinnow orchards, villages; F-16s on the apron, No. 9 "Griffins" and No. 29 "Aggressors" boards, blue-and-gold "Welcome to Mushaf, the Home of Eagles" monuments at both runway ends, IAF MiG-21 and Su-30 tail-section trophies. **F-16A** added (same numbers as the F-16D, own art, moving tailplane, gear in code).
   - TODO (owner asked, not started): landing readability (sink-rate cue, short-final callouts, fairer nose-down rule); audio (Phase 2).
 
 ### Open questions (owner to decide after playtesting)
@@ -54,8 +55,8 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - Money and pay per mission based on landing grade, time and fuel.
 - Mission select: list of routes between unlocked bases with pay offered.
 - Hangar: buy or unlock aircraft.
-- Add aircraft: K-8P Karakoram, F-7PG, Mirage, JF-17 (art plus data each).
-- Add bases: Mianwali, Sargodha, Kamra, Rawalpindi and more, each with its own scenery theme.
+- Add aircraft: K-8P Karakoram, F-7PG, JF-17 (art plus data each). (Mirage V and F-16A already added in the prototype.)
+- Add bases: Mianwali, Kamra, Rawalpindi, Peshawar (data exists) and more, each with its own scenery theme. (Masroor and Mushaf/Sargodha already added in the prototype.)
 
 ## Phase 4: Mission planner
 - Pre-flight screen to choose fuel load. Weight affects takeoff roll, climb and stall speed.

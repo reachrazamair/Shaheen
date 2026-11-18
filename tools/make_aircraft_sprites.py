@@ -49,6 +49,20 @@ CONFIGS = {
         "elevator": {"poly": [(3, 111), (79, 110), (79, 119), (42, 126), (10, 127), (3, 125)],
                      "fill": (66, 70, 76, 255), "fill_min_x": 13},
     },
+    "f16a": {
+        # Owner's F-16A art (No. 9 Sqn "Griffins", 84717). Same pose and size as
+        # the F-16D, gear retracted: gear drawn in code, tailplane cut to its own layer.
+        "src": "docs/reference/f16a_sprite_source.png",
+        "display_width": 115,
+        "gear_regions": [],
+        "prop": None,
+        # Gear tops sit hidden behind the stores/fuselage; the wheels reach the same
+        # height below the fuselage as on the F-16D (fin top to wheel = 275 src px).
+        "points": {"nozzle": (56, 181), "main_gear_top": (348, 250), "nose_gear_top": (483, 248),
+                   "wheel_bottom": (0, 303), "elevator_hinge": (128, 199)},
+        "elevator": {"poly": [(0, 131), (14, 110), (79, 108), (80, 112), (50, 118), (30, 123), (12, 131)],
+                     "fill": (66, 70, 76, 255), "fill_min_x": 23},
+    },
     "mirage5": {
         "src": "docs/reference/mirage5_sprite_source.png",   # owner's art with the gear down
         "display_width": 118,  # world px; 15.5 m, about the F-16's length

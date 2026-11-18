@@ -19,8 +19,9 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 
 @export var departure: BaseData
 @export var destination: BaseData
-## Distance between the two runway thresholds. Compressed so a trainer flight
-## takes about a minute and a half (the real distance to Masroor, Karachi, is ~1,200 km).
+## Distance between the two runway thresholds, used when the destination has
+## no route_distance_m of its own. Compressed so a trainer flight takes about
+## a minute and a half (the real distance to Masroor, Karachi, is ~1,200 km).
 @export var route_distance_m := 5000.0
 ## Sky gradient tint at night (top dark navy, faint glow at the horizon).
 @export var night_sky_tint := Color(0.07, 0.09, 0.2)
@@ -57,6 +58,10 @@ var _nose_wheel_first := false  ## a touchdown came down slightly nose-low: one 
 func _ready() -> void:
 	if GameState.aircraft_path != "":
 		aircraft.set_data(load(GameState.aircraft_path))
+	if GameState.destination_path != "":
+		destination = load(GameState.destination_path)
+	if destination.route_distance_m > 0.0:
+		route_distance_m = destination.route_distance_m
 	departure_base.data = departure
 	destination_base.data = destination
 	destination_base.position.x = route_distance_m * WorldScale.PX_PER_M

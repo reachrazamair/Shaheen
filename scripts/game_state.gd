@@ -8,7 +8,15 @@ const MAX_NAME_LENGTH := 16
 const AIRCRAFT := [
 	"res://data/aircraft/super_mushshak.tres",
 	"res://data/aircraft/mirage5.tres",
+	"res://data/aircraft/f16a.tres",
 	"res://data/aircraft/f16.tres",
+]
+
+## Destinations from Risalpur (always the start for now), in route order:
+## each one is a longer flight (BaseData.route_distance_m).
+const DESTINATIONS := [
+	"res://data/bases/masroor.tres",
+	"res://data/bases/mushaf.tres",
 ]
 
 ## Night: the world canvas is multiplied by this colour (CanvasModulate).
@@ -17,6 +25,8 @@ const NIGHT_TINT := Color(0.2, 0.24, 0.4)
 var pilot_name := ""
 ## Path of the chosen AircraftData.
 var aircraft_path: String = AIRCRAFT[0]
+## Path of the chosen destination BaseData.
+var destination_path: String = DESTINATIONS[0]
 ## Time of day chosen on the start screen.
 var night := false
 

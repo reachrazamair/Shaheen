@@ -1,6 +1,6 @@
 extends Control
 ## Start screen: title, name entry (rank comes from the aircraft: "AVN CDT" in the
-## Super Mushshak, "SQN LDR" in the F-16), aircraft choice, DAY/NIGHT and FLY.
+## Super Mushshak, "SQN LDR" in the F-16), aircraft choice, DAY/NIGHT, destination and FLY.
 ## The first click/keypress here also unlocks browser audio on the web build.
 
 const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
@@ -9,6 +9,7 @@ const FLIGHT_SCENE := "res://scenes/flight/flight.tscn"
 const AIRCRAFT_BLURB := [
 	"TRAINER",
 	"STRIKE FIGHTER",
+	"MULTI-ROLE",
 	"MULTI-ROLE",
 ]
 
@@ -45,8 +46,8 @@ func _build() -> void:
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 7)
-	box.position = Vector2(100, 14)
-	box.size = Vector2(440, 270)
+	box.position = Vector2(14, 14)
+	box.size = Vector2(612, 270)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(box)
 
@@ -98,6 +99,25 @@ func _build() -> void:
 			if on:
 				GameState.night = night)
 		go_row.add_child(b)
+	go_row.add_child(_spacer(0))
+	go_row.get_child(-1).custom_minimum_size = Vector2(14, 0)
+	# Destination: from Risalpur to each base in route order (longer each time).
+	var dest_group := ButtonGroup.new()
+	for path in GameState.DESTINATIONS:
+		var base: BaseData = load(path)
+		var d := Button.new()
+		d.text = "TO " + base.short_name
+		d.toggle_mode = true
+		d.button_group = dest_group
+		d.custom_minimum_size = Vector2(84, 26)
+		d.add_theme_font_size_override("font_size", 8)
+		d.add_theme_color_override("font_pressed_color", SELECTED_COLOR)
+		d.add_theme_color_override("font_hover_pressed_color", SELECTED_COLOR)
+		d.button_pressed = GameState.destination_path == path
+		d.toggled.connect(func(on: bool) -> void:
+			if on:
+				GameState.destination_path = path)
+		go_row.add_child(d)
 	go_row.add_child(_spacer(0))
 	go_row.get_child(-1).custom_minimum_size = Vector2(14, 0)
 	_fly = Button.new()
