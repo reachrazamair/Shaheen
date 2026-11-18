@@ -11,6 +11,11 @@ extends Camera2D
 ## physics ticks), with its own smoothing: horizontally the camera is locked to
 ## the plane (no lag, so fast jets don't judder or drift), the look-ahead and
 ## the vertical position ease in.
+##
+## Zoom: 1 normally. The flight sets zoom_goal below 1 to show more of the
+## world (air-to-ground attack run); framing distances are screen px, so they
+## stay the same on screen at any zoom, and the "low" framing (ground in view)
+## then lasts up to a proportionally higher altitude.
 
 @export var target: Aircraft
 ## Max look-ahead (px) reached at look_ahead_full_speed_kt.
@@ -28,6 +33,14 @@ extends Camera2D
 ## How quickly the look-ahead and the vertical framing catch up (1/s).
 @export var look_ahead_response := 2.0
 @export var vertical_response := 6.0
+## How quickly the zoom eases to zoom_goal (1/s).
+@export var zoom_response := 1.5
+
+## Set by the flight: zoom to ease to, and look-ahead multiplier (attack run
+## keeps the plane nearer the middle so the ground behind it is in view too).
+var zoom_goal := 1.0
+var look_ahead_scale := 1.0
+var _zoom := 1.0
 
 var _look := 0.0
 var _y := 0.0
@@ -42,12 +55,16 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if target == null:
 		return
+	_zoom = lerpf(_zoom, zoom_goal, 1.0 - exp(-zoom_response * delta))
+	zoom = Vector2(_zoom, _zoom)
 	_look = lerpf(_look, _goal_look(), 1.0 - exp(-look_ahead_response * delta))
 	_y = lerpf(_y, _goal_y(), 1.0 - exp(-vertical_response * delta))
 	global_position = Vector2(target.global_position.x + _look, _y)
 
 
 func snap() -> void:
+	_zoom = zoom_goal
+	zoom = Vector2(_zoom, _zoom)
 	_look = _goal_look()
 	_y = _goal_y()
 	global_position = Vector2(target.global_position.x + _look, _y)
@@ -55,12 +72,12 @@ func snap() -> void:
 
 
 func _goal_look() -> float:
-	return look_ahead_px * clampf(target.speed_kt / look_ahead_full_speed_kt, 0.0, 1.0)
+	return look_ahead_px * look_ahead_scale * clampf(target.speed_kt / look_ahead_full_speed_kt, 0.0, 1.0) / _zoom
 
 
 func _goal_y() -> float:
 	var half_h := get_viewport_rect().size.y * 0.5
-	var s := smoothstep(blend_start_m, blend_end_m, target.pos_m.y)
+	var s := smoothstep(blend_start_m / _zoom, blend_end_m / _zoom, target.pos_m.y)
 	var plane_screen_y := lerpf(low_plane_screen_y, high_plane_screen_y, s)
-	var ground_view_y := half_h - ground_screen_y          # centre y that puts the ground at ground_screen_y
-	return minf(ground_view_y, target.global_position.y - plane_screen_y + half_h)
+	var ground_view_y := (half_h - ground_screen_y) / _zoom    # centre y that puts the ground at ground_screen_y
+	return minf(ground_view_y, target.global_position.y - (plane_screen_y - half_h) / _zoom)

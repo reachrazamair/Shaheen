@@ -97,14 +97,21 @@ func _process(delta: float) -> void:
 		# Strike mission before the landing base appears: distance to the next target.
 		var to_target := strike.distance_to_next_target()
 		radar.remaining_m = to_target if to_target < INF else 0.0
-		radar.phase = FlightPhase.compute(aircraft, has_flown)
+		radar.phase = FlightPhase.compute(aircraft, has_flown, INF, _near_departure())
+		if has_flown and not aircraft.on_ground and not aircraft.crashed and strike.attack_view():
+			radar.phase = FlightPhase.ATTACK
 	else:
 		var remaining := distance_to_destination()
 		radar.remaining_m = remaining
-		radar.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
+		radar.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining), _near_departure())
 	_instructor(delta)
 	if debug_label.visible:
 		_update_debug()
+
+
+## Within 2 km past the departure runway (where TAKE OFF is shown).
+func _near_departure() -> bool:
+	return aircraft.pos_m.x < departure.runway_length_m + 2000.0
 
 
 ## False on a strike mission until the landing base has appeared.

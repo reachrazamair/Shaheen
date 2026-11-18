@@ -8,6 +8,8 @@ const CLIMB := "CLIMB"
 const CRUISE := "CRUISE"
 const DESCENT := "DESCENT"
 const APPROACH := "APPROACH"
+## Air-to-ground target run (set by the HUD, not computed here).
+const ATTACK := "ATTACK"
 const LANDED := "LANDED"
 const CRASHED := "CRASHED"
 
@@ -20,7 +22,9 @@ const APPROACH_DISTANCE_M := 2500.0
 
 
 ## distance_to_destination_m: INF until destinations exist (chunk 1.6).
-static func compute(a: Aircraft, has_flown: bool, distance_to_destination_m := INF) -> String:
+## near_departure: still close to the departure runway (TAKE OFF is only shown
+## there; climbing from low level later on is just CLIMB).
+static func compute(a: Aircraft, has_flown: bool, distance_to_destination_m := INF, near_departure := true) -> String:
 	if a.crashed:
 		return CRASHED
 	if a.on_ground:
@@ -28,7 +32,7 @@ static func compute(a: Aircraft, has_flown: bool, distance_to_destination_m := I
 	var vs := a.vertical_speed_fpm
 	if distance_to_destination_m < APPROACH_DISTANCE_M and vs < CLIMB_FPM:
 		return APPROACH
-	if a.altitude_ft < TAKEOFF_HEIGHT_FT and vs > 0.0:
+	if near_departure and a.altitude_ft < TAKEOFF_HEIGHT_FT and vs > 0.0:
 		return TAKE_OFF
 	if vs > CLIMB_FPM:
 		return CLIMB

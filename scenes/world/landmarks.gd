@@ -75,7 +75,13 @@ func _process(delta: float) -> void:
 		return
 	_time += delta
 	var c := camera.get_screen_center_position()
-	position = Vector2(c.x * (1.0 - factor.x), (c.y - _ref_cam_y) * (1.0 - factor.y) - base_lift_px)
+	# Camera zoom (attack run): same layer zoom as parallax_band.gd (k = lerp(1,
+	# zoom, factor.x)); at zoom 1 this is the plain parallax.
+	var z := camera.zoom.x
+	var k := lerpf(1.0, z, factor.x)
+	var cam_y := _ref_cam_y + (c.y * z - _ref_cam_y) * factor.y
+	position = Vector2(c.x * (1.0 - factor.x), c.y - (cam_y + base_lift_px) / z)
+	scale = Vector2(k / z, k / z)
 	# Everything is drawn once; only at night is it redrawn a few times a
 	# second so the beacons blink (redrawing every frame cost a lot).
 	_redraw_timer -= delta

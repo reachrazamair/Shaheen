@@ -6,6 +6,11 @@ extends Node2D
 ## y = 0 lines up with the real ground; when the plane climbs, far layers sink
 ## slowly (like a distant horizon) while near layers drop away quickly.
 ## Colours are set each frame by the flight scene (theme blend between bases).
+## Camera zoom (air-to-ground attack run): the layer gets its own zoom
+## k = lerp(1, camera zoom, factor.x), so far layers barely change while near
+## ones shrink with the world, and it is scaled/placed so that on screen
+## x = centre + p.x * k - camera.x * zoom * factor.x and its ground line keeps
+## its height (at zoom 1 this is exactly the old parallax).
 
 enum Kind { MOUNTAINS, HILLS, TREES, CLOUDS }
 
@@ -35,6 +40,7 @@ var _drawn_first := -999999
 var _drawn_color := Color(-1, -1, -1)
 var _drawn_height := -1.0
 var _ref_cam_y := 0.0
+var _drawn_tiles := -1
 
 
 func _ready() -> void:
@@ -48,27 +54,41 @@ func _process(_delta: float) -> void:
 	if camera == null:
 		return
 	var c := camera.get_screen_center_position()
-	position = Vector2(c.x * (1.0 - factor.x), (c.y - _ref_cam_y) * (1.0 - factor.y))
+	var z := camera.zoom.x
+	var k := _band_zoom()
+	var cam_y := _ref_cam_y + (c.y * z - _ref_cam_y) * factor.y
+	position = Vector2(c.x * (1.0 - factor.x), c.y - cam_y / z)
+	scale = Vector2(k / z, k / z)
 	var first := _first_tile(c)
-	if first != _drawn_first or absf(height_scale - _drawn_height) > 0.005 or absf(color.r - _drawn_color.r) + absf(color.g - _drawn_color.g) + absf(color.b - _drawn_color.b) > 0.012:
+	if first != _drawn_first or _tile_count() != _drawn_tiles or absf(height_scale - _drawn_height) > 0.005 or absf(color.r - _drawn_color.r) + absf(color.g - _drawn_color.g) + absf(color.b - _drawn_color.b) > 0.012:
 		queue_redraw()
 
 
+## This layer's own zoom: 1 for far layers, the camera's for factor 1.
+func _band_zoom() -> float:
+	return lerpf(1.0, camera.zoom.x, factor.x) if camera else 1.0
+
+
+## First tile in view (layer-local), and how many tiles cover the screen.
 func _first_tile(c: Vector2) -> int:
-	var left := c.x - get_viewport_rect().size.x * 0.5 - position.x
+	var left := (c.x * camera.zoom.x * factor.x - get_viewport_rect().size.x * 0.5) / _band_zoom()
 	return floori(left / repeat_px)
+
+
+func _tile_count() -> int:
+	return ceili(get_viewport_rect().size.x / _band_zoom() / repeat_px) + 1
 
 
 func _draw() -> void:
 	if camera == null:
 		return
 	var c := camera.get_screen_center_position()
-	var view_w := get_viewport_rect().size.x
 	var first := _first_tile(c)
+	var tiles := _tile_count()
 	_drawn_first = first
+	_drawn_tiles = tiles
 	_drawn_color = color
 	_drawn_height = height_scale
-	var tiles := ceili(view_w / repeat_px) + 1
 	var sy := height_scale if kind != Kind.CLOUDS else 1.0
 	var points := PackedVector2Array()
 	var colors := PackedColorArray()

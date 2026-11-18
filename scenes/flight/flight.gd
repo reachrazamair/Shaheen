@@ -135,6 +135,11 @@ func _retry() -> void:
 
 func _process(_delta: float) -> void:
 	_update_theme()
+	if strike:
+		# Attack run: zoom out to see bombs fall and targets go up; normal view to land.
+		var wide := strike.attack_view()
+		camera.zoom_goal = strike.attack_zoom if wide else 1.0
+		camera.look_ahead_scale = strike.attack_look_ahead if wide else 1.0
 
 
 func _physics_process(delta: float) -> void:
