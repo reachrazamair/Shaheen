@@ -150,7 +150,9 @@ func _physics_process(delta: float) -> void:
 	if not is_revealed and not a.crashed:
 		var d := distance_to_next_target()
 		if not a.on_ground and d < targets_ahead_call_m:
-			if a.data.bomb_guided:
+			if a.data.weapon_is_missile:
+				_once("ahead", "Targets %.1f km! Wait for IN RANGE on the sight, then SPACE to fire!" % (d / 1000.0))
+			elif a.data.bomb_guided:
 				_once("ahead", "Targets %.1f km! Down to 300 ft. Target in the bracket, then SPACE!" % (d / 1000.0))
 			else:
 				_once("ahead", "Targets %.1f km! Down to 300 ft. Watch the RELEASE CUE, drop on DROP!" % (d / 1000.0))
@@ -162,14 +164,15 @@ func _physics_process(delta: float) -> void:
 	# Where a bomb released now would land (bomb sight, release cue, marker).
 	if a.bombs_left > 0 and not a.on_ground and not a.crashed:
 		var hp := a.data.bomb_hardpoints[mini(a.bombs_left - 1, a.data.bomb_hardpoints.size() - 1)]
-		var pos := a.hardpoint_m(hp + Vector2(0.0, a.data.bomb_diameter_px * 0.5))
+		var pos := a.hardpoint_m(hp + Vector2(0.0, a.weapon_size().y * 0.5))
 		var down := Vector2(sin(a.pitch), -cos(a.pitch)) * a.data.bomb_eject_ms
 		var hit := Bomb.predict_impact(pos, a.velocity_m + down, a.data.bomb_drag)
 		impact_x = hit.x
 		fall_time_s = hit.y
 	# The ground marker is a sighting aid: guided-bomb jets only (owner: the
 	# Mirage's unguided bombs get just the release cue).
-	_marker_visible = show_impact_marker and a.data.bomb_guided and a.bombs_left > 0 			and not a.on_ground and not a.crashed
+	_marker_visible = show_impact_marker and a.data.bomb_guided and not a.data.weapon_is_missile \
+			and a.bombs_left > 0 and not a.on_ground and not a.crashed
 	queue_redraw()
 
 
@@ -209,13 +212,27 @@ func _claimed(t: GroundTarget) -> bool:
 	return false
 
 
+## Missiles: the nearest live target (not already taken) between the minimum
+## and maximum range ahead of the jet, or null.
+func missile_target() -> GroundTarget:
+	var d := aircraft.data
+	var best: GroundTarget = null
+	for t in targets:
+		var dx := t.x_m - aircraft.pos_m.x
+		if not t.destroyed and dx >= d.missile_range_min_m and dx <= d.missile_range_max_m and not _claimed(t) \
+				and (best == null or t.x_m < best.x_m):
+			best = t
+	return best
+
+
 ## Guided bombs: the live target nearest x within the guidance reach (not
 ## already taken by a falling bomb), or null.
 func guided_target_near(x: float) -> GroundTarget:
 	var best: GroundTarget = null
 	var reach := aircraft.data.bomb_guidance_reach_m
 	for t in targets:
-		if not t.destroyed and absf(t.x_m - x) <= reach and not _claimed(t) 				and (best == null or absf(t.x_m - x) < absf(best.x_m - x)):
+		if not t.destroyed and absf(t.x_m - x) <= reach and not _claimed(t) \
+				and (best == null or absf(t.x_m - x) < absf(best.x_m - x)):
 			best = t
 	return best
 
@@ -249,19 +266,34 @@ func target_at(x: float) -> GroundTarget:
 
 func _on_bomb_released(pos: Vector2, vel: Vector2, world: Node2D, draw_before: Node) -> void:
 	var d := aircraft.data
-	var b := Bomb.new()
+	var b: Bomb
+	if d.weapon_is_missile:
+		var m := Missile.new()
+		var t := missile_target()
+		if t:
+			m.guide_x = t.x_m
+		m.drop_s = d.missile_drop_s
+		m.burn_s = d.missile_burn_s
+		m.speed_ms = d.missile_speed_ms
+		m.accel = d.missile_accel
+		m.turn_deg_s = d.missile_turn_deg_s
+		m.loft = d.missile_loft
+		m.loft_max_m = d.missile_loft_max_m
+		b = m
+	else:
+		b = Bomb.new()
+		if d.bomb_guided:
+			var t := guided_target_near(Bomb.predict_impact_x(pos, vel, d.bomb_drag))
+			if t:
+				b.guide_x = t.x_m
+				b.guide_accel = d.bomb_guidance_accel
+		elif d.bomb_scatter_ms > 0.0:
+			vel.x += _rng.randf_range(-d.bomb_scatter_ms, d.bomb_scatter_ms)
 	b.pos_m = pos
 	b.vel_m = vel
 	b.drag = d.bomb_drag
-	if d.bomb_guided:
-		var t := guided_target_near(Bomb.predict_impact_x(pos, vel, d.bomb_drag))
-		if t:
-			b.guide_x = t.x_m
-			b.guide_accel = d.bomb_guidance_accel
-	elif d.bomb_scatter_ms > 0.0:
-		b.vel_m.x += _rng.randf_range(-d.bomb_scatter_ms, d.bomb_scatter_ms)
-	b.length_px = d.bomb_length_px * d.sprite_scale * bomb_draw_scale
-	b.diameter_px = d.bomb_diameter_px * d.sprite_scale * bomb_draw_scale
+	b.texture = d.weapon_sprite
+	b.draw_scale = d.sprite_scale * bomb_draw_scale
 	b.impacted.connect(_on_impact)
 	world.add_child(b)
 	world.move_child(b, draw_before.get_index())
@@ -270,7 +302,12 @@ func _on_bomb_released(pos: Vector2, vel: Vector2, world: Node2D, draw_before: N
 	_release.pitch_scale = 1.6
 	_release.volume_db = -10.0
 	_release.play()
-	if not _said.has("first_drop"):
+	if d.weapon_is_missile:
+		if is_nan(b.guide_x):
+			hud.messages.say("Fired with NO target?! Wasted! Wait for IN RANGE!", true)
+		else:
+			hud.messages.say("MAGNUM! %s away!" % d.weapon_name, true)
+	elif not _said.has("first_drop"):
 		_said["first_drop"] = true
 		hud.messages.say("Bomb away! Watch it fall...", true)
 
@@ -280,7 +317,11 @@ func falling_impacts() -> PackedFloat32Array:
 	var out := PackedFloat32Array()
 	for b in _falling:
 		if is_instance_valid(b) and not b.is_queued_for_deletion():
-			out.append(Bomb.predict_impact_x(b.pos_m, b.vel_m, b.drag))
+			if b is Missile:
+				if not is_nan(b.guide_x):
+					out.append(b.guide_x)
+			else:
+				out.append(Bomb.predict_impact_x(b.pos_m, b.vel_m, b.drag))
 	return out
 
 
@@ -316,7 +357,7 @@ func _on_impact(x: float) -> void:
 			if not t.destroyed:
 				miss = minf(miss, absf(x - t.x_m) - t.half_width_m)
 		if miss < INF:
-			hud.messages.say("MISSED by %d m! %s" % [roundi(maxf(miss, 1.0)), "Target IN the bracket, then drop!" if aircraft.data.bomb_guided else "Drop ON the cue, d*mn it!"], true)
+			hud.messages.say("MISSED by %d m! %s" % [roundi(maxf(miss, 1.0)), ("Fire only when IN RANGE!" if aircraft.data.weapon_is_missile else "Target IN the bracket, then drop!") if aircraft.data.bomb_guided else "Drop ON the cue, d*mn it!"], true)
 
 
 func _reveal() -> void:

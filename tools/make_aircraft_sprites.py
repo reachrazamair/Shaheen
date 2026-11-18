@@ -83,6 +83,22 @@ CONFIGS = {
                    "light_nav_far": (185, 203), "light_tail": (55, 140), "light_beacon": (38, 38),
                    "light_landing": (575, 252)},
     },
+    # Weapons (owner's art, 2026-11-18), drawn under the jets on a strike
+    # mission and when falling/flying. display_width is in world px like the
+    # aircraft (aircraft art is ~2x true scale; so are these): texture width =
+    # display_width x 4 = the weapon's length in aircraft texture px.
+    "agm88": {   # AGM-88 HARM, F-16D (4.2 m). Art points left: flipped to point right.
+        "src": "docs/reference/agm88_harm_source.png", "flip": True,
+        "display_width": 32, "gear_regions": [], "prop": None, "points": {},
+    },
+    "gbu12": {   # GBU-12 Paveway II laser-guided bomb, F-16A (3.3 m)
+        "src": "docs/reference/gbu12_source.png",
+        "display_width": 25, "gear_regions": [], "prop": None, "points": {},
+    },
+    "mk82": {    # Mk 82 unguided bomb, Mirage V (2.2 m); the "Mk 82" caption is erased
+        "src": "docs/reference/mk82_source.png", "erase": [(180, 79, 330, 97)],
+        "display_width": 17, "gear_regions": [], "prop": None, "points": {},
+    },
     # Front views for parked aircraft (base scenery, not flyable). "erase" blanks
     # the phone share/copy/download buttons in the top-right of the screenshots.
     "k8_front": {
@@ -145,6 +161,8 @@ def remove_background(im):
 
 def build(name, cfg):
     im = Image.open(cfg["src"]).convert("RGBA")
+    if cfg.get("flip"):
+        im = im.transpose(Image.FLIP_LEFT_RIGHT)
     for box in cfg.get("erase", []):
         im.paste((255, 255, 255, 255), box)
     remove_background(im)

@@ -8,6 +8,9 @@ extends Control
 ## impact point, the bracket around it is how far a guided bomb can steer,
 ## targets slide in from the right as the jet flies on, white bars show where
 ## falling bombs will hit. Target inside the bracket = IN RANGE: press Space.
+## Missile (F-16D, AGM-88 HARM): the screen shows the ground ahead of the jet
+## instead (jet symbol on the left), the bracket is the missile's range band,
+## and IN RANGE - FIRE! when a target is inside it.
 
 var strike: StrikeMission
 
@@ -54,29 +57,36 @@ func _draw() -> void:
 	var sr := r.grow(-5)
 	draw_rect(sr, glass_color)
 	var a := strike.aircraft
-	var centre_x := strike.impact_x
+	var d := a.data
+	var missile := d.weapon_is_missile
+	# Bombs: centred on the impact point. Missile: from just behind the jet to past max range.
+	var centre_x := a.pos_m.x + d.missile_range_max_m * 0.5 if missile else strike.impact_x
+	var span := d.missile_range_max_m * 0.5 + 500.0 if missile else range_m
 	var ground_y := sr.end.y - 7.0
 	var half_w := sr.size.x * 0.5 - 3.0
 	var mid := sr.position.x + sr.size.x * 0.5
-	var to_x := func(m: float) -> float: return mid + (m - centre_x) / range_m * half_w
+	var to_x := func(m: float) -> float: return mid + (m - centre_x) / span * half_w
 	draw_rect(Rect2(sr.position.x + 2, ground_y, sr.size.x - 4, 1), Color(ink_color, 0.6))
 	# Tick every 100 m (longer every 500 m) so the ground's speed is visible.
-	var m := ceilf((centre_x - range_m) / 100.0) * 100.0
-	while m <= centre_x + range_m:
+	var tick := 500.0 if missile else 100.0
+	var m := ceilf((centre_x - span) / tick) * tick
+	while m <= centre_x + span:
 		var tx: float = to_x.call(m)
-		draw_rect(Rect2(roundf(tx), ground_y + 1, 1, 4 if int(m) % 500 == 0 else 2), Color(ink_color, 0.45))
-		m += 100.0
+		draw_rect(Rect2(roundf(tx), ground_y + 1, 1, 4 if int(m) % int(tick * 5.0) == 0 else 2), Color(ink_color, 0.45))
+		m += tick
 
 	var have := a.bombs_left > 0
-	var in_range := have and strike.guided_target_near(centre_x) != null
-	# Guidance bracket: a guided bomb can steer onto a target anywhere in here.
+	var in_range := have and (strike.missile_target() if missile else strike.guided_target_near(centre_x)) != null
+	# Bracket: where a guided bomb can steer to (around the impact point), or
+	# the missile's range band ahead of the jet.
 	if have:
-		var reach := a.data.bomb_guidance_reach_m / range_m * half_w
 		var col := in_range_color if in_range else Color(ink_color, 0.7)
-		for side in [-1.0, 1.0]:
-			var bx := roundf(mid + side * reach)
+		var edges: Array = [to_x.call(a.pos_m.x + d.missile_range_min_m), to_x.call(a.pos_m.x + d.missile_range_max_m)] if missile \
+				else [mid - d.bomb_guidance_reach_m / span * half_w, mid + d.bomb_guidance_reach_m / span * half_w]
+		for k in 2:
+			var bx := roundf(edges[k])
 			draw_rect(Rect2(bx, ground_y - 9, 1, 8), col)
-			draw_rect(Rect2(bx - (2 if side > 0 else 0), ground_y - 9, 3, 1), col)
+			draw_rect(Rect2(bx - (2 if k == 1 else 0), ground_y - 9, 3, 1), col)
 
 	# Targets (arrows at the edges when out of range).
 	for t in strike.targets:
@@ -93,7 +103,7 @@ func _draw() -> void:
 		elif tx > hi:
 			draw_colored_polygon(PackedVector2Array([Vector2(hi + 1, ground_y - 3), Vector2(hi - 3, ground_y - 6), Vector2(hi - 3, ground_y)]), target_color)
 		else:
-			var half := maxf(t.half_width_m / range_m * half_w, 1.5)
+			var half := maxf(t.half_width_m / span * half_w, 1.5)
 			draw_rect(Rect2(roundf(tx - half), ground_y - 5, roundf(half * 2.0), 5), target_color)
 
 	# Bombs already falling: where they will hit.
@@ -102,8 +112,13 @@ func _draw() -> void:
 		if bx > sr.position.x + 2 and bx < sr.end.x - 2:
 			draw_rect(Rect2(bx - 1, ground_y - 13, 2, 8), Color(1, 1, 1, 0.85))
 
-	# Impact cross.
-	if have:
+	# Jet symbol (missile view), or the impact cross (bombs).
+	if missile:
+		var jx := roundf(to_x.call(a.pos_m.x))
+		draw_rect(Rect2(jx - 4, sr.position.y + 26, 9, 1), ink_color)
+		draw_rect(Rect2(jx - 4, sr.position.y + 24, 1, 2), ink_color)
+		draw_rect(Rect2(jx - 1, sr.position.y + 27, 3, 1), ink_color)
+	elif have:
 		var col := in_range_color if in_range else ink_color
 		var cx := roundf(mid)
 		draw_rect(Rect2(cx, sr.position.y + 22, 1, ground_y - sr.position.y - 22), Color(col, 0.4))
@@ -112,18 +127,18 @@ func _draw() -> void:
 
 	# Text: title / status, distance to the next target, bombs left.
 	var blink := fmod(_time, 0.5) < 0.32
-	var title := "BOMB SIGHT"
+	var title := d.weapon_name if d.weapon_name != "" else "BOMB SIGHT"
 	var title_col := Color(ink_color, 0.85)
 	if in_range:
-		title = "IN RANGE - DROP!" if blink else ""
+		title = ("IN RANGE - FIRE!" if missile else "IN RANGE - DROP!") if blink else ""
 		title_col = in_range_color
 	elif not have:
-		title = "BOMBS FALLING"
+		title = "MISSILE AWAY" if missile else "BOMBS FALLING"
 	_text(Vector2(sr.position.x + 3, sr.position.y + 9), title, title_col)
-	var d := strike.distance_to_next_target()
-	var line2 := "TGT %.1f KM" % (d / 1000.0) if d < INF else "NO TARGETS"
+	var dist := strike.distance_to_next_target()
+	var line2 := "TGT %.1f KM" % (dist / 1000.0) if dist < INF else "NO TARGETS"
 	_text(Vector2(sr.position.x + 3, sr.position.y + 19), line2, Color(ink_color, 0.7))
-	var bombs := "%d BOMB%s" % [a.bombs_left, "" if a.bombs_left == 1 else "S"]
+	var bombs := "%d LEFT" % a.bombs_left
 	var w := _font.get_string_size(bombs, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
 	_text(Vector2(sr.end.x - 3 - w, sr.position.y + 19), bombs, Color(ink_color, 0.7))
 

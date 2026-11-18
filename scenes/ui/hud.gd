@@ -18,6 +18,9 @@ extends CanvasLayer
 ## of the tail-strike pitch while the tail is still near the runway.
 @export var tail_warning_margin_deg := 4.0
 @export var tail_warning_cooldown_s := 3.0
+## Strike mission weapon panel (selected weapon and count), screen px.
+@export var weapon_panel_pos := Vector2(4, 102)
+
 ## Strike mission release cue for unguided bombs, screen px (just right of
 ## the aircraft, clear of the ground).
 @export var release_cue_rect := Rect2(208, 124, 150, 48)
@@ -38,6 +41,8 @@ var _last_touchdown_fpm := 0.0
 var _prev_gear_down := true
 var _prev_flap := 1
 var _sight: BombSight
+## Strike mission: selected weapon and how many are left (under the name badge).
+var _weapon_label: Label
 
 
 func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: float) -> void:
@@ -66,6 +71,7 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 		_sight.position = radar.position
 		_sight.size = radar.size
 		add_child(_sight)
+		_add_weapon_panel()
 		var cue := ReleaseCue.new()
 		cue.strike = strike
 		cue.position = release_cue_rect.position
@@ -93,6 +99,7 @@ func _process(delta: float) -> void:
 		return
 	if _sight:
 		radar.visible = not _sight.wanted()
+	_update_weapon_panel()
 	if not destination_known():
 		# Strike mission before the landing base appears: distance to the next target.
 		var to_target := strike.distance_to_next_target()
@@ -107,6 +114,33 @@ func _process(delta: float) -> void:
 	_instructor(delta)
 	if debug_label.visible:
 		_update_debug()
+
+
+## Small dark panel with a gold frame: "WPN  AGM-88 HARM  x2".
+func _add_weapon_panel() -> void:
+	var box := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.12, 0.16, 0.9)
+	style.border_color = Color(0.75, 0.6, 0.25)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(2)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	box.add_theme_stylebox_override("panel", style)
+	box.position = weapon_panel_pos
+	_weapon_label = Label.new()
+	_weapon_label.add_theme_font_size_override("font_size", 8)
+	_weapon_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
+	box.add_child(_weapon_label)
+	add_child(box)
+	_update_weapon_panel()
+
+
+func _update_weapon_panel() -> void:
+	if _weapon_label:
+		_weapon_label.text = "WPN  %s  x%d" % [aircraft.data.weapon_name, aircraft.bombs_left]
 
 
 ## Within 2 km past the departure runway (where TAKE OFF is shown).

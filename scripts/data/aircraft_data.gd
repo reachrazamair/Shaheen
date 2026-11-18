@@ -197,9 +197,15 @@ extends Resource
 ## Where each bomb hangs, texture px: x = middle of the bomb, y = its top
 ## (pylon). Dropped from the last entry first.
 @export var bomb_hardpoints := PackedVector2Array()
-## Bomb size on the sprite, texture px (drawn at sprite_scale like the art).
-@export var bomb_length_px := 64.0
-@export var bomb_diameter_px := 12.0
+## The weapon (owner's art, built by tools/make_aircraft_sprites.py), drawn
+## at its texture size in the aircraft's texture px (its top at the hardpoint).
+@export var weapon_sprite: Texture2D
+## HUD name of the weapon, e.g. "AGM-88 HARM".
+@export var weapon_name := ""
+## Start-screen card text on air to ground, e.g. "GUIDED AIR-TO-GROUND MISSILE".
+@export var weapon_menu_label := ""
+## Missile (rocket motor, flies to a target) instead of a free-fall bomb.
+@export var weapon_is_missile := false
 ## Air drag on a falling bomb: deceleration = bomb_drag * speed^2 (1/m).
 @export var bomb_drag := 0.0002
 ## Released bombs are pushed down off the pylon at this speed (m/s).
@@ -216,6 +222,21 @@ extends Resource
 @export var bomb_guidance_accel := 15.0
 ## Unguided spread: random extra forward/back speed at release, +- this (m/s).
 @export var bomb_scatter_ms := 0.0
+## Missiles: a target this far ahead (m) can be locked at launch.
+@export var missile_range_min_m := 500.0
+@export var missile_range_max_m := 6000.0
+## Missiles: drop clear of the jet for this long, then the motor burns for
+## missile_burn_s, accelerating to missile_speed_ms.
+@export var missile_drop_s := 0.35
+@export var missile_burn_s := 8.0
+@export var missile_speed_ms := 420.0
+@export var missile_accel := 140.0
+## Missiles: most turn rate (deg/s), and how high above the target it aims
+## while still far away (fraction of the distance, capped): it climbs a little,
+## then dives onto the target.
+@export var missile_turn_deg_s := 35.0
+@export var missile_loft := 0.25
+@export var missile_loft_max_m := 250.0
 
 @export_group("Pilot")
 ## Rank shown with the player's name (badge, result screen) and in radio calls.

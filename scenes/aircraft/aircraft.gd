@@ -202,11 +202,16 @@ func drop_bomb() -> bool:
 		return false
 	bombs_left -= 1
 	var hp := data.bomb_hardpoints[mini(bombs_left, data.bomb_hardpoints.size() - 1)]
-	var pos := hardpoint_m(hp + Vector2(0.0, data.bomb_diameter_px * 0.5))
+	var pos := hardpoint_m(hp + Vector2(0.0, weapon_size().y * 0.5))
 	var down := Vector2(sin(pitch), -cos(pitch)) * data.bomb_eject_ms
 	bomb_released.emit(pos, velocity_m + down)
 	queue_redraw()
 	return true
+
+
+## Weapon size in texture px (its sprite, or a small default).
+func weapon_size() -> Vector2:
+	return data.weapon_sprite.get_size() if data.weapon_sprite else Vector2(64, 12)
 
 
 ## World position (m) of a point on the sprite (texture px), at the latest physics tick.
@@ -722,10 +727,12 @@ func _draw_sprite_aircraft() -> void:
 	draw_texture(data.sprite, Vector2.ZERO)
 
 	# Bombs on their pylons (strike mission), in front of the body.
-	for i in mini(bombs_left, data.bomb_hardpoints.size()):
-		var hp := data.bomb_hardpoints[i]
-		draw_rect(Rect2(hp.x - 7, hp.y - 4, 14, 5), Color(0.2, 0.21, 0.22))
-		Bomb.draw_shape(self, hp + Vector2(0, data.bomb_diameter_px * 0.5), data.bomb_length_px, data.bomb_diameter_px)
+	if data.weapon_sprite:
+		var ws := weapon_size()
+		for i in mini(bombs_left, data.bomb_hardpoints.size()):
+			var hp := data.bomb_hardpoints[i]
+			draw_rect(Rect2(hp.x - 7, hp.y - 4, 14, 5), Color(0.2, 0.21, 0.22))
+			draw_texture_rect(data.weapon_sprite, Rect2(hp.x - ws.x * 0.5, hp.y, ws.x, ws.y), false)
 
 	# Moving tailplane: rotates about its hinge, trailing edge up for nose-up.
 	if data.sprite_elevator:

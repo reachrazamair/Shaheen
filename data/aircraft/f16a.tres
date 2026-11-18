@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="AircraftData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="AircraftData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/aircraft_data.gd" id="1_data"]
 [ext_resource type="Texture2D" path="res://assets/sprites/f16a_body.png" id="2_sprite"]
 [ext_resource type="Texture2D" path="res://assets/sprites/f16a_elevator.png" id="3_elev"]
+[ext_resource type="Texture2D" path="res://assets/sprites/gbu12_body.png" id="9_weapon"]
 
 [resource]
 script = ExtResource("1_data")
@@ -71,8 +72,19 @@ afterburner_volume_db = -3.0
 strike_capable = true
 bomb_count = 2
 bomb_hardpoints = PackedVector2Array(182, 152, 226, 154)
-bomb_length_px = 64.0
-bomb_diameter_px = 12.0
+weapon_sprite = ExtResource("9_weapon")
+weapon_name = "GBU-12 PAVEWAY II"
+weapon_menu_label = "GUIDED AIR-TO-GROUND BOMB"
+weapon_is_missile = false
+missile_range_min_m = 500.0
+missile_range_max_m = 6000.0
+missile_drop_s = 0.35
+missile_burn_s = 8.0
+missile_speed_ms = 420.0
+missile_accel = 140.0
+missile_turn_deg_s = 35.0
+missile_loft = 0.25
+missile_loft_max_m = 250.0
 bomb_drag = 0.0002
 bomb_eject_ms = 2.0
 bomb_blast_radius_m = 18.0

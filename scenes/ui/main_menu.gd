@@ -177,10 +177,10 @@ func _update_cards() -> void:
 		var data: AircraftData = load(GameState.AIRCRAFT[i])
 		var ok := not strike or data.strike_capable
 		_cards[i].disabled = not ok
-		# Air to ground: the card says what it carries (guided = bomb sight + steering bombs).
+		# Air to ground: the card says what it carries (AircraftData.weapon_menu_label).
 		var role: String = AIRCRAFT_BLURB[i] if i < AIRCRAFT_BLURB.size() else ""
 		if strike:
-			role = "%d x %s BOMBS" % [data.bomb_count, "GUIDED" if data.bomb_guided else "UNGUIDED"] if ok else "NO BOMBS"
+			role = data.weapon_menu_label if ok else "NO WEAPONS"
 		_blurbs[i].text = role
 		_cards[i].modulate = Color.WHITE if ok else Color(1, 1, 1, 0.35)
 		if ok and first_ok < 0:
