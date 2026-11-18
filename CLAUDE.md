@@ -56,8 +56,8 @@ out of scope until the owner says otherwise.
 640x360 base viewport, stretch `canvas_items`, integer scaling, nearest filter
 (aircraft sprites use linear + mipmaps). Side view, plane flies left to right,
 camera follows with look-ahead, parallax layers. Stylised bases, never real
-layouts or satellite imagery. Placeholders at final size. Silkscreen pixel font
-(sizes 8 or 16).
+layouts or satellite imagery. Placeholders at final size. Chakra Petch SemiBold
+font, smoothed (sizes 8 or 16; owner wanted clearer text than the old pixel font).
 
 ## Content and sensitivity
 Real PAF base and aircraft names; scenery stylised and invented, no sensitive

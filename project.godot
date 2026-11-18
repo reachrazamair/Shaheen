@@ -30,8 +30,8 @@ window/stretch/scale_mode="integer"
 
 [gui]
 
-theme/custom_font="res://assets/fonts/Silkscreen-Regular.ttf"
-theme/default_font_antialiasing=0
+theme/custom_font="res://assets/fonts/ChakraPetch-SemiBold.ttf"
+theme/default_font_antialiasing=1
 
 [input]
 

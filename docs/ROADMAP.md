@@ -49,6 +49,7 @@ One chunk at a time, in this order (owner chose sound first).
   - Done 2026-11-18: `scripts/sound_synth.gd` builds every sound once per session (~135 ms on the dev PC); `scenes/aircraft/aircraft_audio.gd` drives them from the aircraft state. Per-aircraft engine numbers in AircraftData "Sound", the rest of the mix in aircraft_audio.gd exports. Not yet heard in a browser (web uses Godot's sample playback). Owner: F-16 too whiny, so its engine note lowered (pitch 0.45-0.8) and the whine's 3 kHz overtone softened.
 - [x] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
   - Done 2026-11-18: `scenes/ui/pause_menu.gd` (added by flight.gd, off once the flight ends). Audio buses Master / Engine / Effects (`default_bus_layout.tres`); slider volumes saved by GameState to `user://settings.cfg`. A short thump plays when a slider is let go, so the level can be heard while paused.
+  - Owner request (2026-11-18): clearer, less pixelated text everywhere: project font Silkscreen -> Chakra Petch SemiBold, smoothed.
 - [ ] 2.3 Landing readability: sink-rate cue on the HUD, short-final callouts, fairer nose-down rule.
 - [x] 2.4 PAF liveries: already in the aircraft art (owner, 2026-11-18); nothing to do.
 - [ ] 2.5 Gamepad support.
