@@ -11,9 +11,8 @@ aligned layers to assets/sprites/<name>_<layer>.png:
   prop - propeller blades (shown while the engine runs), optional
 Front-view configs (k8_front, jf17_front, f16_front) make parked-aircraft scenery.
   elevator - the tailplane cut out of the art (drawn rotating with the
-             stick), optional. The body under it comes from the owner's
-             no-tailplane picture (F-16A), or for art without one (F-16D)
-             from that body plus this aircraft's own nozzle, mirrored
+             stick), optional. The body under it is the owner's picture of
+             the same art without the tailplane (under_src)
 Textures are stored at TEXTURE_SCALE x the on-screen size and drawn scaled
 down with mipmaps, so they look like the art rather than blocky.
 It prints texture-space positions to copy into data/aircraft/<name>.tres.
@@ -49,13 +48,10 @@ CONFIGS = {
         "points": {"nozzle": (50, 184), "main_wheel": (295, 0), "elevator_hinge": (128, 202),
                    "light_landing": (477, 262)},
         # All-moving tailplane, in OUTPUT texture px (see the f16a config).
+        # Owner's picture of the same art WITHOUT the tailplane (2026-11-18) is the
+        # body under it; under_offset = where it sits on the source.
         "elevator": {"poly": [(0, 131), (14, 108), (78, 106), (79, 111), (52, 117), (32, 123), (13, 131)],
-                     # No picture of the D without its tailplane: what it hides is taken from
-                     # the F-16A body (built from the owner's no-tailplane art; build f16a
-                     # first if that art changes), the D's own nozzle mirrored about its axis
-                     # (= sprite_nozzle.y) up to nozzle_x_max.
-                     "under_donor": "assets/sprites/f16a_body.png", "donor_offset": (0, 1),
-                     "nozzle_axis_y": 101, "nozzle_x_max": 30},
+                     "under_src": "docs/reference/f16_no_tailplane_source.png", "under_offset": (-5, 2)},
     },
     "f16a": {
         # Owner's F-16A art (No. 9 Sqn "Griffins", 84717). Same pose and size as
@@ -147,38 +143,6 @@ def remove_background(im):
             px[x, y] = (0, 0, 0, 0)
 
 
-def _fill_under_tailplane(body, cut, donor, donor_offset, axis_y, nozzle_x_max):
-    """Paints what the tailplane hides, for art that has no picture without it
-    (the F-16D): the same area of a donor body that does (the F-16A, built from
-    the owner's no-tailplane art, same pose and size), and over that the lower
-    half of this aircraft's own nozzle, mirrored from its visible top half
-    (the nozzle is a cylinder; the D's is tan, the A's dark)."""
-    bpx, dpx = body.load(), donor.load()
-    w, h = body.size
-    dw, dh = donor.size
-    dx, dy = donor_offset
-    for x in range(w):
-        bottom = -1
-        if x < nozzle_x_max and bpx[x, axis_y][3] > 0:
-            top = axis_y
-            while top - 1 >= 0 and bpx[x, top - 1][3] > 0:
-                top -= 1
-            bottom = 2 * axis_y - top
-        for y in range(h):
-            if x < nozzle_x_max and y > max(bottom, axis_y) and y < axis_y + 35:
-                # Under this nozzle there is only sky (the donor's nozzle is bigger,
-                # and specks of the tailplane outline can sit outside the cut).
-                bpx[x, y] = (0, 0, 0, 0)
-                continue
-            if not cut[x, y]:
-                continue
-            if axis_y < y <= bottom:
-                bpx[x, y] = bpx[x, 2 * axis_y - y]
-            else:
-                sx, sy = x - dx, y - dy
-                bpx[x, y] = dpx[sx, sy] if 0 <= sx < dw and 0 <= sy < dh else (0, 0, 0, 0)
-
-
 def build(name, cfg):
     im = Image.open(cfg["src"]).convert("RGBA")
     for box in cfg.get("erase", []):
@@ -215,6 +179,13 @@ def build(name, cfg):
         under = Image.new("RGBA", im.size, (255, 255, 255, 255))
         under.paste(Image.open(e["under_src"]).convert("RGBA"), e["under_offset"])
         remove_background(under)
+        # The gear is its own layer: cut the same gear areas out of this picture too.
+        upx = under.load()
+        for y in range(h):
+            for x in range(w):
+                if any(x0 <= x <= x1 and y >= y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+                       for x0, x1, y0, y1 in cfg["gear_regions"]):
+                    upx[x, y] = (0, 0, 0, 0)
         under = under.crop(box).resize((out_w, out_h), Image.LANCZOS)
         mask = Image.new("L", (out_w, out_h), 0)
         ImageDraw.Draw(mask).polygon(e["poly"], fill=255)
@@ -222,16 +193,6 @@ def build(name, cfg):
         elev.paste(out["body"], (0, 0), mask)
         out["elevator"] = elev
         out["body"] = under
-    elif cfg.get("elevator"):
-        e = cfg["elevator"]
-        mask = Image.new("L", (out_w, out_h), 0)
-        ImageDraw.Draw(mask).polygon(e["poly"], fill=255)
-        elev = Image.new("RGBA", (out_w, out_h), (0, 0, 0, 0))
-        elev.paste(out["body"], (0, 0), mask)
-        donor = Image.open(e["under_donor"]).convert("RGBA")
-        _fill_under_tailplane(out["body"], mask.load(), donor, e["donor_offset"],
-                              e["nozzle_axis_y"], e["nozzle_x_max"])
-        out["elevator"] = elev
     for layer, img in out.items():
         img.save("assets/sprites/%s_%s.png" % (name, layer))
 

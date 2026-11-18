@@ -50,7 +50,7 @@ One chunk at a time, in this order (owner chose sound first).
 - [x] 2.2 Pause menu and simple options: Esc pause (Resume / Restart / Menu), volume sliders, key list.
   - Done 2026-11-18: `scenes/ui/pause_menu.gd` (added by flight.gd, off once the flight ends). Audio buses Master / Engine / Effects (`default_bus_layout.tres`); slider volumes saved by GameState to `user://settings.cfg`. A short thump plays when a slider is let go, so the level can be heard while paused.
   - Owner request (2026-11-18): clearer, less pixelated text everywhere: project font Silkscreen -> Chakra Petch SemiBold, smoothed.
-  - Owner fixes (2026-11-18): F-16A/D moving tailplane now uncovers the real art underneath (F-16A body from the owner's no-tailplane picture; F-16D from that plus its own nozzle) instead of a blank/grey block; menus show body + tailplane; start-screen preview shows the F-16A and F-16D at the same size.
+  - Owner fixes (2026-11-18): F-16A/D moving tailplane now uncovers the real art underneath (each F-16's body is the owner's picture without the tailplane) instead of a blank/grey block; menus show body + tailplane; start-screen preview shows the F-16A and F-16D at the same size.
 - [ ] 2.3 Landing readability: sink-rate cue on the HUD, short-final callouts, fairer nose-down rule.
 - [x] 2.4 PAF liveries: already in the aircraft art (owner, 2026-11-18); nothing to do.
 - [ ] 2.5 Gamepad support.
