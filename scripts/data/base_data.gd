@@ -8,9 +8,11 @@ extends Resource
 ## Short name for the HUD and radio calls (e.g. "PESHAWAR").
 @export var short_name := "BASE"
 @export var runway_length_m := 1200.0
-## Distance from the departure runway threshold (Risalpur, always the start for
-## now) to this base's threshold, compressed: Masroor 5 km (~1.5 min in the
-## Mushshak), Mushaf 6.5 km (~2 min). 0 = use the flight scene's default.
+## Where this base stands in the one shared world: distance from the departure
+## runway threshold (Risalpur, always the start for now) to this base's
+## threshold, compressed. Bases must not overlap (leave a gap after the previous
+## base's runway). Masroor 5 km (89 s from lift-off in the Mushshak at ~120 kt),
+## Mushaf 7 km (121 s). 0 = use the flight scene's default.
 @export var route_distance_m := 0.0
 
 @export_group("Buildings")
@@ -49,6 +51,10 @@ extends Resource
 ## Squadron boards on the apron: text (two lines split by "|") and position.
 @export var squadron_boards := PackedStringArray()
 @export var squadron_board_x_m := PackedFloat32Array()
+## Squadron board face and frame/name colours (Masroor: deep blue and gold;
+## Mushaf: red and gold, so the two bases look different).
+@export var squadron_board_color := Color(0.08, 0.16, 0.38)
+@export var squadron_board_trim := Color(0.85, 0.68, 0.25)
 ## Big welcome board (lines), one at each welcome_sign_x_m from the runway start
 ## (negative = before the threshold; past runway_length_m = beyond the far end). Empty = none.
 @export var welcome_sign := PackedStringArray()

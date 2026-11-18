@@ -1,8 +1,11 @@
 extends Node2D
 ## One flight: departure base -> destination base, aircraft, camera, scenery,
 ## HUD, and the landing judge (chunk 1.7).
-## Bases and the route distance are data; the scenery theme blends from the
-## departure base's look to the destination's as the plane flies.
+## One shared world: the departure (Risalpur) and EVERY base in
+## GameState.DESTINATIONS stand along the route at their route_distance_m, so
+## the player can divert and land anywhere. The flight passes only if they
+## land at the destination chosen on the start screen. The scenery theme
+## blends from one base's look to the next as the plane flies.
 ##
 ## Flight states:
 ##   PREFLIGHT - on the departure runway, not yet airborne
@@ -16,11 +19,12 @@ enum State { PREFLIGHT, FLYING, ROLLOUT, DONE }
 const GRADES := ["PERFECT", "GOOD", "FIRM", "HARD"]
 const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 const CrashEffect := preload("res://scenes/world/crash_effect.gd")
+const BaseScene := preload("res://scenes/world/base.tscn")
 
 @export var departure: BaseData
+## The base the player must land at (overridden by GameState.destination_path).
 @export var destination: BaseData
-## Distance between the two runway thresholds, used when the destination has
-## no route_distance_m of its own. Compressed so a trainer flight takes about
+## Distance to a base that has no route_distance_m of its own. Compressed so a trainer flight takes about
 ## a minute and a half (the real distance to Masroor, Karachi, is ~1,200 km).
 @export var route_distance_m := 5000.0
 ## Sky gradient tint at night (top dark navy, faint glow at the horizon).
@@ -49,7 +53,10 @@ const CrashEffect := preload("res://scenes/world/crash_effect.gd")
 var state := State.PREFLIGHT
 var flight_time_s := 0.0
 var _airborne_once := false
-var _landed_on := ""            ## "departure" / "destination" during rollout
+var _landed_on := -1            ## index into _bases during rollout
+## Every base in the world, by distance: [threshold x (m), BaseData, node].
+## Index 0 is the departure.
+var _bases: Array = []
 var _worst_touchdown_fpm := 0.0
 var _overran := false
 var _nose_wheel_first := false  ## a touchdown came down slightly nose-low: one grade lower
@@ -62,22 +69,15 @@ func _ready() -> void:
 		destination = load(GameState.destination_path)
 	if destination.route_distance_m > 0.0:
 		route_distance_m = destination.route_distance_m
-	departure_base.data = departure
-	destination_base.data = destination
-	destination_base.position.x = route_distance_m * WorldScale.PX_PER_M
-	ground.end_m = route_distance_m + destination.runway_length_m + 3000.0
+	_build_world()
 	aircraft.place_at(spawn_x_m)
-	landmarks.setup(destination.landmarks, route_distance_m)
-	ground.grass_color = departure.ground_color
-	ground.tuft_color = departure.ground_tuft_color
-	ground.end_grass_color = destination.ground_color
-	ground.end_tuft_color = destination.ground_tuft_color
-	ground.blend_from_m = route_distance_m * 0.3
-	ground.blend_to_m = route_distance_m * 0.75
 	if GameState.night:
 		_setup_night()
 	camera.snap()
 	hud.setup(aircraft, departure, destination, route_distance_m)
+	for b in _bases.slice(1):
+		if b[1] != destination:
+			hud.radar.other_bases.append([b[0], b[1].runway_length_m])
 	aircraft.lifted_off.connect(_on_lifted_off)
 	aircraft.touched_down.connect(_on_touched_down)
 	aircraft.tail_struck.connect(_on_tail_struck)
@@ -110,13 +110,54 @@ func _physics_process(delta: float) -> void:
 
 # --- Landing judge ---
 
-## Runway under a given x (m): "departure", "destination" or "".
-func runway_at(x_m: float) -> String:
-	if x_m >= 0.0 and x_m <= departure.runway_length_m:
-		return "departure"
-	if x_m >= route_distance_m and x_m <= route_distance_m + destination.runway_length_m:
-		return "destination"
-	return ""
+## Builds the shared world: departure at x = 0, then every base in
+## GameState.DESTINATIONS at its route distance; ground colours and
+## landmarks for all of them.
+func _build_world() -> void:
+	departure_base.data = departure
+	_bases = [[0.0, departure, departure_base]]
+	var reused := false
+	for path in GameState.DESTINATIONS:
+		var b: BaseData = load(path)
+		var node: Node2D = destination_base
+		if reused:
+			node = BaseScene.instantiate()
+			add_child(node)
+			move_child(node, destination_base.get_index() + 1)
+		reused = true
+		node.data = b
+		var x := b.route_distance_m if b.route_distance_m > 0.0 else route_distance_m
+		node.position.x = x * WorldScale.PX_PER_M
+		_bases.append([x, b, node])
+	_bases.sort_custom(func(p: Array, q: Array) -> bool: return p[0] < q[0])
+	var last: Array = _bases[_bases.size() - 1]
+	ground.end_m = last[0] + last[1].runway_length_m + 3000.0
+	# Ground colour: each base's colour holds around it and blends across the gap to the next.
+	var xs := PackedFloat32Array()
+	var grass := PackedColorArray()
+	var tufts := PackedColorArray()
+	for i in _bases.size() - 1:
+		var end: float = _bases[i][0] + _bases[i][1].runway_length_m
+		var gap: float = _bases[i + 1][0] - end
+		xs.append(end + gap * 0.25)
+		grass.append(_bases[i][1].ground_color)
+		tufts.append(_bases[i][1].ground_tuft_color)
+		xs.append(end + gap * 0.7)
+		grass.append(_bases[i + 1][1].ground_color)
+		tufts.append(_bases[i + 1][1].ground_tuft_color)
+	ground.set_stops(xs, grass, tufts)
+	var marks: Array = []
+	for b in _bases:
+		marks.append([b[1].landmarks, b[0]])
+	landmarks.setup(marks)
+
+
+## Index (into _bases) of the runway under a given x (m), or -1.
+func runway_at(x_m: float) -> int:
+	for i in _bases.size():
+		if x_m >= _bases[i][0] and x_m <= _bases[i][0] + _bases[i][1].runway_length_m:
+			return i
+	return -1
 
 
 func _on_lifted_off() -> void:
@@ -135,7 +176,7 @@ func _on_touched_down(vertical_speed_ms: float) -> void:
 	var fpm := absf(vertical_speed_ms) * WorldScale.M_TO_FT * 60.0
 	_worst_touchdown_fpm = maxf(_worst_touchdown_fpm, fpm)
 	var where := runway_at(aircraft.pos_m.x)
-	if where == "":
+	if where < 0:
 		_crash("Touched down off the runway.", fpm)
 	elif aircraft.gear_pos < 0.95:
 		_crash("The gear was up: belly landing.", fpm)
@@ -165,7 +206,7 @@ func _on_tail_struck() -> void:
 ## On the ground: overrun / off-runway checks, and the end of the rollout.
 func _check_ground_roll() -> void:
 	var x := aircraft.pos_m.x
-	var on_runway := runway_at(x) != ""
+	var on_runway := runway_at(x) >= 0
 	if not on_runway and aircraft.speed_kt > aircraft.data.overrun_crash_speed_kt:
 		_crash("Ran off the end of the runway.", _worst_touchdown_fpm if state == State.ROLLOUT else -1.0)
 		return
@@ -187,13 +228,16 @@ func _grade_for(fpm: float) -> int:
 func _finish_landing() -> void:
 	var result := _base_result()
 	result["touchdown_fpm"] = _worst_touchdown_fpm
-	if _landed_on == "departure":
+	var landed_base: BaseData = _bases[_landed_on][1]
+	if landed_base != destination:
+		var here := landed_base.short_name.capitalize()
+		var dest := destination.short_name.capitalize()
 		result["grade"] = "WRONG BASE"
 		result["title"] = "WRONG BASE"
-		result["reasons"] = ["You landed back at %s. Your destination was %s." % [
-				departure.short_name.capitalize(), destination.short_name.capitalize()]]
-		hud.messages.say("That's %s, %s! %s was the destination! Did you even READ the brief?!" % [departure.short_name.capitalize(),
-				GameState.pilot_call(), destination.short_name.capitalize()], true)
+		result["reasons"] = ["You landed %s %s. Your destination was %s." % [
+				"back at" if _landed_on == 0 else "at", here, dest]]
+		hud.messages.say("That's %s, %s! %s was the destination! Did you even READ the brief?!" % [here,
+				GameState.pilot_call(), dest], true)
 	else:
 		var g := _grade_for(_worst_touchdown_fpm)
 		var reasons: Array[String] = []
@@ -271,10 +315,22 @@ func _setup_night() -> void:
 	aircraft.modulate = night_aircraft_boost
 
 
+## Scenery theme at the plane: the nearest base's look, blending across the
+## gap between one base's runway end and the next base's threshold.
 func _update_theme() -> void:
-	var t := smoothstep(0.15, 0.85, aircraft.pos_m.x / route_distance_m)
-	sky.modulate = night_sky_tint if GameState.night else departure.sky_tint.lerp(destination.sky_tint, t)
-	mountains.color = departure.mountain_color.lerp(destination.mountain_color, t)
-	mountains.height_scale = lerpf(departure.mountain_height, destination.mountain_height, t)
-	hills.color = departure.hill_color.lerp(destination.hill_color, t)
-	trees.color = departure.tree_color.lerp(destination.tree_color, t)
+	var x := aircraft.pos_m.x
+	var a: BaseData = _bases[0][1]
+	var b: BaseData = a
+	var t := 0.0
+	for i in _bases.size() - 1:
+		var end: float = _bases[i][0] + _bases[i][1].runway_length_m
+		if x < _bases[i + 1][0] or i == _bases.size() - 2:
+			a = _bases[i][1]
+			b = _bases[i + 1][1]
+			t = smoothstep(0.15, 0.85, (x - end) / maxf(_bases[i + 1][0] - end, 1.0))
+			break
+	sky.modulate = night_sky_tint if GameState.night else a.sky_tint.lerp(b.sky_tint, t)
+	mountains.color = a.mountain_color.lerp(b.mountain_color, t)
+	mountains.height_scale = lerpf(a.mountain_height, b.mountain_height, t)
+	hills.color = a.hill_color.lerp(b.hill_color, t)
+	trees.color = a.tree_color.lerp(b.tree_color, t)

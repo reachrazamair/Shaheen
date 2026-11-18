@@ -36,9 +36,9 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 47
 	for i in 6:
-		# Two open lanes of sky (under the title, and between the name box and
-		# the aircraft cards) so clouds never pass behind the UI.
-		var lane_y := 68.0 if i % 2 == 0 else 149.0
+		# One open lane of sky above the title, so clouds never pass behind the
+		# UI (the start screen's steps fill the space under the title).
+		var lane_y := 13.0
 		_clouds.append([Vector2(rng.randf_range(0, 640), lane_y + rng.randf_range(-2, 2)), rng.randf_range(0.45, 0.65), rng.randf_range(4, 9)])
 
 

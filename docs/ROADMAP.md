@@ -30,7 +30,9 @@ Detailed in `PROTOTYPE_SPEC.md`.
 - [ ] 1.9 Tuning pass and web deploy to Vercel for friends
   - Web deploy done: https://shaheen-green.vercel.app (2026-11-17). Tuning pass from friends' feedback still to do.
   - Tuning so far: instructor English-only (censored curses), black helmet with visor down; firm-but-legal landings make a small realistic hop (one per landing), smooth landings don't, too hard still crashes. Takeoff pitch limit removed (any pitch, any time); over-rotating near the runway = tail-strike crash, with a NOSE TOO HIGH warning. Landings made forgiving (owner: crashing on every landing): slight nose-wheel-first = grade penalty not crash, nose lowers itself after touchdown so brakes work, higher gear limits, crashes at landing speed are scrapes not explosions.
-  - Second destination: **PAF Base Mushaf, Sargodha** (6.5 km, chosen on the start screen next to Masroor): green plains, banyan trees, kinnow orchards, villages; F-16s on the apron, No. 9 "Griffins" and No. 29 "Aggressors" boards, blue-and-gold "Welcome to Mushaf, the Home of Eagles" monuments at both runway ends, IAF MiG-21 and Su-30 tail-section trophies. **F-16A** added (same numbers as the F-16D, own art, moving tailplane, gear in code).
+  - Second destination: **PAF Base Mushaf, Sargodha** (7 km, beyond Masroor): green plains, banyan trees, kinnow orchards, villages; F-16s on the apron, No. 9 "Griffins" and No. 29 "Aggressors" boards, blue-and-gold "Welcome to Mushaf, the Home of Eagles" monuments at both runway ends, IAF MiG-21 and Su-30 tail-section trophies. **F-16A** added (same numbers as the F-16D, own art, moving tailplane, gear in code).
+  - **One shared world:** all bases stand along the route, so you can divert and land anywhere; the flight passes only at the destination chosen before take-off (else WRONG BASE). Radar shows every base. Mushaf squadron boards red and gold.
+  - **Start screen in steps:** START, name, aircraft, route, day/night, FLY (BACK/NEXT).
   - TODO (owner asked, not started): landing readability (sink-rate cue, short-final callouts, fairer nose-down rule); audio (Phase 2).
 
 ### Open questions (owner to decide after playtesting)

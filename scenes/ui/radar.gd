@@ -13,6 +13,9 @@ var route_m := 1.0                 ## departure threshold -> destination thresho
 var departure_runway_m := 1000.0
 var destination_runway_m := 1000.0
 var remaining_m := 0.0
+## Other bases along the route (diversions): [[threshold x m, runway length m], ...].
+## Drawn dimmer; the map always runs from the departure to the farthest base.
+var other_bases: Array = []
 
 @export_group("Colours")
 @export var bezel_color := Color(0.42, 0.33, 0.24)
@@ -64,6 +67,8 @@ func _draw() -> void:
 	# Map: x across the route, y = altitude (ground near the bottom of the screen).
 	var x0 := -margin_m
 	var x1 := route_m + destination_runway_m + margin_m
+	for b in other_bases:
+		x1 = maxf(x1, b[0] + b[1] + margin_m)
 	var ground_y := sr.end.y - 6.0
 	var to_x := func(m: float) -> float: return roundf(lerpf(sr.position.x + 2, sr.end.x - 2, (m - x0) / (x1 - x0)))
 
@@ -80,7 +85,13 @@ func _draw() -> void:
 	# Ground and the two bases.
 	draw_rect(Rect2(sr.position.x, ground_y, sr.size.x, 1), ink_color.darkened(0.25))
 	_draw_base(to_x.call(0.0), to_x.call(departure_runway_m), ground_y)
+	for b in other_bases:
+		_draw_base(to_x.call(b[0]), to_x.call(b[0] + b[1]), ground_y, 0.45)
 	_draw_base(to_x.call(route_m), to_x.call(route_m + destination_runway_m), ground_y)
+	# Marker over the destination.
+	var dx: float = to_x.call(route_m + destination_runway_m * 0.5)
+	draw_colored_polygon(PackedVector2Array([Vector2(dx - 2, sr.position.y + 2), Vector2(dx + 3, sr.position.y + 2),
+			Vector2(dx + 0.5, sr.position.y + 5)]), segment_on)
 
 	# Altitude range (steps up as the plane climbs).
 	var alt := maxf(aircraft.altitude_ft, 0.0)
@@ -117,14 +128,16 @@ func _draw() -> void:
 
 
 ## Runway strip, control tower and hangar for one base.
-func _draw_base(rx0: float, rx1: float, ground_y: float) -> void:
-	draw_rect(Rect2(rx0, ground_y - 1, maxf(rx1 - rx0, 2.0), 2), ink_color)
+## dim: 0 = full brightness, more = fainter (bases that aren't the destination).
+func _draw_base(rx0: float, rx1: float, ground_y: float, dim := 0.0) -> void:
+	var ink := ink_color.lerp(screen_color, dim)
+	draw_rect(Rect2(rx0, ground_y - 1, maxf(rx1 - rx0, 2.0), 2), ink)
 	# Tower: stick with a cab on top.
-	draw_rect(Rect2(rx0 + 1, ground_y - 8, 1, 7), ink_color)
-	draw_rect(Rect2(rx0, ground_y - 10, 3, 2), ink_color)
+	draw_rect(Rect2(rx0 + 1, ground_y - 8, 1, 7), ink)
+	draw_rect(Rect2(rx0, ground_y - 10, 3, 2), ink)
 	# Hangar: a little arched block behind the runway start.
-	draw_rect(Rect2(rx0 - 7, ground_y - 3, 5, 3), ink_color.darkened(0.15))
-	draw_rect(Rect2(rx0 - 6, ground_y - 4, 3, 1), ink_color.darkened(0.15))
+	draw_rect(Rect2(rx0 - 7, ground_y - 3, 5, 3), ink.darkened(0.15))
+	draw_rect(Rect2(rx0 - 6, ground_y - 4, 3, 1), ink.darkened(0.15))
 
 
 ## Bottom strip: phase on the left, distance to go on the right, progress segments.

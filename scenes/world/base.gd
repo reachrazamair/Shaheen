@@ -206,7 +206,7 @@ func _draw_shelter(cx: float) -> void:
 		draw_circle(Vector2(cx, -h + 2), 2.0, _lamp(Color(1.0, 0.85, 0.55)))
 
 
-## Squadron board: deep blue with a gold frame, squadron on the first line,
+## Squadron board: coloured face (BaseData: blue at Masroor, red at Mushaf) with a gold frame, squadron on the first line,
 ## its name large in gold on the second. Text: "LINE 1|LINE 2". Mounted high on
 ## tall posts so a jet stopped in front of it doesn't hide it.
 func _draw_squadron_board(cx: float, text: String) -> void:
@@ -219,8 +219,8 @@ func _draw_squadron_board(cx: float, text: String) -> void:
 	var r := Rect2(cx - w * 0.5, -80, w, 30)
 	draw_rect(Rect2(r.position.x + 6, r.end.y, 3, -r.end.y), outline_color)
 	draw_rect(Rect2(r.end.x - 9, r.end.y, 3, -r.end.y), outline_color)
-	draw_rect(r, Color(0.85, 0.68, 0.25))
-	draw_rect(r.grow(-2), Color(0.08, 0.16, 0.38))
+	draw_rect(r, data.squadron_board_trim)
+	draw_rect(r.grow(-2), data.squadron_board_color)
 	var gold := _lamp(Color(1.0, 0.82, 0.35)) if _night() else Color(1.0, 0.82, 0.35)
 	var white := _lamp(Color.WHITE) if _night() else Color.WHITE
 	draw_string(_font, Vector2(cx - w1 * 0.5, r.position.y + 11), l1, HORIZONTAL_ALIGNMENT_LEFT, -1, 8, white)

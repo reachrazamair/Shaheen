@@ -36,11 +36,12 @@ const LAYOUT := {
 	"mazar_e_quaid": [["mazar_e_quaid", -150.0]],
 	"masjid_e_tooba": [["masjid_e_tooba", 450.0]],
 	"skyline": [["skyline", -950.0], ["skyline", -650.0], ["skyline", -350.0], ["skyline", 150.0], ["skyline", 750.0]],
-	"fields": [["fields", -1500.0], ["fields", -700.0], ["fields", 100.0], ["fields", 900.0]],
-	"orchard": [["orchard", -1250.0], ["orchard", -480.0], ["orchard", 520.0]],
-	"banyan": [["banyan", -1400.0], ["banyan", -1080.0], ["banyan", -820.0], ["banyan", -560.0],
+	# Sargodha starts ~1 km before Mushaf: Masroor's runway ends 600 m short of it.
+	"fields": [["fields", -800.0], ["fields", 100.0], ["fields", 900.0]],
+	"orchard": [["orchard", -480.0], ["orchard", 520.0]],
+	"banyan": [["banyan", -1000.0], ["banyan", -820.0], ["banyan", -560.0],
 			["banyan", -250.0], ["banyan", 0.0], ["banyan", 300.0], ["banyan", 700.0]],
-	"village": [["village", -950.0], ["village", -100.0], ["village", 820.0]],
+	"village": [["village", -700.0], ["village", -100.0], ["village", 820.0]],
 }
 
 var _items: Array = []   # [kind, local x px, seed]
@@ -49,15 +50,17 @@ var _time := 0.0
 var _redraw_timer := 0.0
 
 
-## kinds: BaseData.landmarks; base_x_m: the base's runway threshold (route metres).
-func setup(kinds: PackedStringArray, base_x_m: float) -> void:
+## bases: [[kinds (BaseData.landmarks), runway threshold x (route metres)], ...]
+## for every base along the route.
+func setup(bases: Array) -> void:
 	_items.clear()
 	var i := 0
-	for k in kinds:
-		for entry in LAYOUT.get(k, []):
-			var cam_px: float = (base_x_m + entry[1]) * WorldScale.PX_PER_M
-			_items.append([entry[0], cam_px * factor.x, 31 + i * 17])
-			i += 1
+	for b in bases:
+		for k in b[0]:
+			for entry in LAYOUT.get(k, []):
+				var cam_px: float = (b[1] + entry[1]) * WorldScale.PX_PER_M
+				_items.append([entry[0], cam_px * factor.x, 31 + i * 17])
+				i += 1
 	queue_redraw()
 
 
