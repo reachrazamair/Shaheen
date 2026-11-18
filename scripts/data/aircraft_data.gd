@@ -206,6 +206,16 @@ extends Resource
 @export var bomb_eject_ms := 2.0
 ## A target this close (metres, edge to impact) is destroyed. Arcade-generous.
 @export var bomb_blast_radius_m := 18.0
+## Guided bombs (F-16s): the bomb sight in the HUD, and each bomb steers onto
+## the live target nearest its impact point if that target is within
+## bomb_guidance_reach_m. Unguided (Mirage): no sight, a simple release cue
+## instead, and each bomb scatters by up to bomb_scatter_ms.
+@export var bomb_guided := false
+@export var bomb_guidance_reach_m := 250.0
+## Most sideways acceleration a guided bomb can use to steer (m/s^2).
+@export var bomb_guidance_accel := 15.0
+## Unguided spread: random extra forward/back speed at release, +- this (m/s).
+@export var bomb_scatter_ms := 0.0
 
 @export_group("Pilot")
 ## Rank shown with the player's name (badge, result screen) and in radio calls.

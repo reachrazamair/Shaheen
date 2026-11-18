@@ -45,6 +45,8 @@ var _rng := RandomNumberGenerator.new()
 var _said := {}
 ## Where a bomb released now would land (m), and whether the marker is shown.
 var impact_x := 0.0
+## Seconds a bomb released now would fall.
+var fall_time_s := 0.0
 var _marker_visible := false
 ## Bombs still falling (plain Array: a bomb is freed when it goes off).
 var _falling: Array = []
@@ -118,19 +120,26 @@ func _physics_process(_delta: float) -> void:
 	if not is_revealed and not a.crashed:
 		var d := distance_to_next_target()
 		if not a.on_ground and d < targets_ahead_call_m:
-			_once("ahead", "Targets %.1f km! Watch the BOMB SIGHT: target under the cross, SPACE! Steady!" % (d / 1000.0))
+			if a.data.bomb_guided:
+				_once("ahead", "Targets %.1f km! Watch the BOMB SIGHT: target in the bracket, SPACE! Steady!" % (d / 1000.0))
+			else:
+				_once("ahead", "Targets %.1f km! Dumb bombs: watch the RELEASE CUE, drop on DROP! Steady!" % (d / 1000.0))
 		var all_hit := targets_destroyed == targets.size()
 		var dry := a.bombs_left == 0 and bombs_in_air == 0
 		var past := a.pos_m.x > target_x_m[target_x_m.size() - 1] + pass_margin_m
 		if all_hit or dry or past:
 			_reveal()
-	# Aiming marker: where a bomb released now would land.
-	_marker_visible = show_impact_marker and a.bombs_left > 0 and not a.on_ground and not a.crashed
-	if _marker_visible:
+	# Where a bomb released now would land (bomb sight, release cue, marker).
+	if a.bombs_left > 0 and not a.on_ground and not a.crashed:
 		var hp := a.data.bomb_hardpoints[mini(a.bombs_left - 1, a.data.bomb_hardpoints.size() - 1)]
 		var pos := a.hardpoint_m(hp + Vector2(0.0, a.data.bomb_diameter_px * 0.5))
 		var down := Vector2(sin(a.pitch), -cos(a.pitch)) * a.data.bomb_eject_ms
-		impact_x = Bomb.predict_impact_x(pos, a.velocity_m + down, a.data.bomb_drag)
+		var hit := Bomb.predict_impact(pos, a.velocity_m + down, a.data.bomb_drag)
+		impact_x = hit.x
+		fall_time_s = hit.y
+	# The ground marker is a sighting aid: guided-bomb jets only (owner: the
+	# Mirage's unguided bombs get just the release cue).
+	_marker_visible = show_impact_marker and a.data.bomb_guided and a.bombs_left > 0 			and not a.on_ground and not a.crashed
 	queue_redraw()
 
 
@@ -148,6 +157,49 @@ func _draw() -> void:
 		draw_rect(Rect2(p.x - 0.5, p.y - 12 - k * 6, 1, 3), Color(col, 0.8 - k * 0.12))
 
 
+## True if a bomb already falling will take this target out (guided onto it,
+## or predicted to land on it), so the sight and the cue move on to the next.
+func _claimed(t: GroundTarget) -> bool:
+	var r := aircraft.data.bomb_blast_radius_m + t.half_width_m
+	for b in _falling:
+		if not is_instance_valid(b) or b.is_queued_for_deletion():
+			continue
+		if not is_nan(b.guide_x) and is_equal_approx(b.guide_x, t.x_m):
+			return true
+		if is_nan(b.guide_x) and absf(Bomb.predict_impact_x(b.pos_m, b.vel_m, b.drag) - t.x_m) <= r:
+			return true
+	return false
+
+
+## Guided bombs: the live target nearest x within the guidance reach (not
+## already taken by a falling bomb), or null.
+func guided_target_near(x: float) -> GroundTarget:
+	var best: GroundTarget = null
+	var reach := aircraft.data.bomb_guidance_reach_m
+	for t in targets:
+		if not t.destroyed and absf(t.x_m - x) <= reach and not _claimed(t) 				and (best == null or absf(t.x_m - x) < absf(best.x_m - x)):
+			best = t
+	return best
+
+
+## Unguided release cue for the next live target ahead: {seconds} until a bomb
+## released now would land on its middle (negative = late), {window} = +- seconds
+## that still hit it. Empty if there is none.
+func next_release() -> Dictionary:
+	var vx := aircraft.velocity_m.x
+	if vx < 1.0:
+		return {}
+	var out := {}
+	for t in targets:
+		if t.destroyed or _claimed(t):
+			continue
+		var window := (aircraft.data.bomb_blast_radius_m + t.half_width_m) / vx
+		var s := (t.x_m - impact_x) / vx
+		if s > -window - 1.5 and (out.is_empty() or s < out.seconds):
+			out = {"seconds": s, "window": window, "target": t}
+	return out
+
+
 ## The live target a bomb hitting x would destroy, or null.
 func target_at(x: float) -> GroundTarget:
 	var r := aircraft.data.bomb_blast_radius_m
@@ -163,6 +215,13 @@ func _on_bomb_released(pos: Vector2, vel: Vector2, world: Node2D, draw_before: N
 	b.pos_m = pos
 	b.vel_m = vel
 	b.drag = d.bomb_drag
+	if d.bomb_guided:
+		var t := guided_target_near(Bomb.predict_impact_x(pos, vel, d.bomb_drag))
+		if t:
+			b.guide_x = t.x_m
+			b.guide_accel = d.bomb_guidance_accel
+	elif d.bomb_scatter_ms > 0.0:
+		b.vel_m.x += _rng.randf_range(-d.bomb_scatter_ms, d.bomb_scatter_ms)
 	b.length_px = d.bomb_length_px * d.sprite_scale
 	b.diameter_px = d.bomb_diameter_px * d.sprite_scale
 	b.impacted.connect(_on_impact)
@@ -217,7 +276,7 @@ func _on_impact(x: float) -> void:
 			if not t.destroyed:
 				miss = minf(miss, absf(x - t.x_m) - t.half_width_m)
 		if miss < INF:
-			hud.messages.say("MISSED by %d m! Target UNDER the cross, then drop, d*mn it!" % roundi(maxf(miss, 1.0)), true)
+			hud.messages.say("MISSED by %d m! %s" % [roundi(maxf(miss, 1.0)), "Target IN the bracket, then drop!" if aircraft.data.bomb_guided else "Drop ON the cue, d*mn it!"], true)
 
 
 func _reveal() -> void:

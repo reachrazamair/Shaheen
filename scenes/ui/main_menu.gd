@@ -43,6 +43,8 @@ var _preview: TextureRect
 var _pilot_label: Label
 ## Aircraft card buttons, same order as GameState.AIRCRAFT.
 var _cards: Array[Button] = []
+## The second line on each card (role, or the bomb load on air to ground).
+var _blurbs: Array[Label] = []
 
 
 func _ready() -> void:
@@ -175,6 +177,11 @@ func _update_cards() -> void:
 		var data: AircraftData = load(GameState.AIRCRAFT[i])
 		var ok := not strike or data.strike_capable
 		_cards[i].disabled = not ok
+		# Air to ground: the card says what it carries (guided = bomb sight + steering bombs).
+		var role: String = AIRCRAFT_BLURB[i] if i < AIRCRAFT_BLURB.size() else ""
+		if strike:
+			role = "%d x %s BOMBS" % [data.bomb_count, "GUIDED" if data.bomb_guided else "UNGUIDED"] if ok else "NO BOMBS"
+		_blurbs[i].text = role
 		_cards[i].modulate = Color.WHITE if ok else Color(1, 1, 1, 0.35)
 		if ok and first_ok < 0:
 			first_ok = i
@@ -273,6 +280,7 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 	inner.add_child(name_label)
 	var blurb := _label(AIRCRAFT_BLURB[index] if index < AIRCRAFT_BLURB.size() else "", 8, Color(0.8, 0.85, 0.8))
 	blurb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blurbs.append(blurb)
 	inner.add_child(blurb)
 	card.add_child(inner)
 	_highlight(card, name_label)

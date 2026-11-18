@@ -5,6 +5,8 @@ extends Node2D
 ## when it reaches the ground (`impacted`). The same fall model predicts the
 ## impact point for the aiming marker (predict_impact_x).
 ## Physics in metres (x along the route, y = height); drawn at 4 px/m.
+## Guided bombs (guide_x set) steer their forward speed, within guide_accel,
+## so their predicted impact point moves onto guide_x.
 
 signal impacted(x_m: float)
 
@@ -17,6 +19,9 @@ var drag := 0.0002
 ## Drawn size in world px (texture px x the aircraft's sprite_scale).
 var length_px := 16.0
 var diameter_px := 3.0
+## Guided: ground x (m) to steer onto; NAN = unguided.
+var guide_x := NAN
+var guide_accel := 15.0
 
 
 func _ready() -> void:
@@ -24,6 +29,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if not is_nan(guide_x):
+		var hit := predict_impact(pos_m, vel_m, drag)
+		var need := (guide_x - hit.x) / maxf(hit.y, 0.3)   # extra forward speed needed
+		vel_m.x += clampf(need, -guide_accel * delta, guide_accel * delta)
 	vel_m = step(vel_m, drag, delta)
 	pos_m += vel_m * delta
 	if pos_m.y <= 0.0:
@@ -49,6 +58,11 @@ static func step(v: Vector2, k: float, dt: float) -> Vector2:
 
 ## Where (x, metres) a bomb released at pos with velocity vel would hit the ground.
 static func predict_impact_x(pos: Vector2, vel: Vector2, k: float) -> float:
+	return predict_impact(pos, vel, k).x
+
+
+## Impact x (m) and seconds until impact, for a bomb at pos with velocity vel.
+static func predict_impact(pos: Vector2, vel: Vector2, k: float) -> Vector2:
 	var p := pos
 	var v := vel
 	var t := 0.0
@@ -58,8 +72,9 @@ static func predict_impact_x(pos: Vector2, vel: Vector2, k: float) -> float:
 		p += v * PREDICT_STEP_S
 		t += PREDICT_STEP_S
 		if p.y <= 0.0:
-			return lerpf(prev.x, p.x, prev.y / maxf(prev.y - p.y, 0.0001))
-	return p.x
+			var f := prev.y / maxf(prev.y - p.y, 0.0001)
+			return Vector2(lerpf(prev.x, p.x, f), t - PREDICT_STEP_S * (1.0 - f))
+	return Vector2(p.x, t)
 
 
 ## Olive-drab low-drag bomb, nose pointing +x, centred on `c`: ogive nose with

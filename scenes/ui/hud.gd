@@ -18,8 +18,9 @@ extends CanvasLayer
 ## of the tail-strike pitch while the tail is still near the runway.
 @export var tail_warning_margin_deg := 4.0
 @export var tail_warning_cooldown_s := 3.0
-## Strike mission bomb sight, screen px (bottom centre).
-@export var bomb_sight_rect := Rect2(200, 300, 240, 52)
+## Strike mission release cue for unguided bombs, screen px (just right of
+## the aircraft, clear of the ground).
+@export var release_cue_rect := Rect2(208, 124, 150, 48)
 
 var aircraft: Aircraft
 ## Air-to-ground mission (set before setup), or null on a ferry flight.
@@ -36,6 +37,7 @@ var _tail_cooldown := 0.0
 var _last_touchdown_fpm := 0.0
 var _prev_gear_down := true
 var _prev_flap := 1
+var _sight: BombSight
 
 
 func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: float) -> void:
@@ -57,11 +59,18 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	if strike:
 		radar.show_destination = false
 		radar.strike = strike
-		var sight := BombSight.new()
-		sight.strike = strike
-		sight.position = bomb_sight_rect.position
-		sight.size = bomb_sight_rect.size
-		add_child(sight)
+		# Guided bombs: the bomb sight takes the radar's place during the target
+		# run. Unguided: a release cue just right of the aircraft.
+		_sight = BombSight.new()
+		_sight.strike = strike
+		_sight.position = radar.position
+		_sight.size = radar.size
+		add_child(_sight)
+		var cue := ReleaseCue.new()
+		cue.strike = strike
+		cue.position = release_cue_rect.position
+		cue.size = release_cue_rect.size
+		add_child(cue)
 	_prev_gear_down = a.gear_down
 	_prev_flap = a.flap_setting
 	a.lifted_off.connect(_on_lifted_off)
@@ -82,6 +91,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if aircraft == null:
 		return
+	if _sight:
+		radar.visible = not _sight.wanted()
 	if not destination_known():
 		# Strike mission before the landing base appears: distance to the next target.
 		var to_target := strike.distance_to_next_target()
