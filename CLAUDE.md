@@ -1,150 +1,77 @@
 # Project Shaheen (working title)
 
-A 2D, side-view, pixel-art flight game centred on the **Pakistan Air Force (PAF)**. The player flies real PAF aircraft between named PAF bases: start the engine, take off, fly, and land at the destination. A career mode starts you in trainers; successful missions earn pay, which unlocks faster jets up to fighters like the JF-17 and F-16.
+2D side-view pixel-art flight game around the Pakistan Air Force: fly real PAF
+aircraft between named PAF bases (start up, take off, fly, land). Inspired by
+TU-95 (lo-fi "fly A to B", but much less clunky) and Air Offense Command (side
+view, plane flies right over a scrolling landscape; its ground attack comes later).
 
-Inspiration:
-- **TU-95** (browser game): a simple, charming, deliberately lo-fi "fly a big plane from A to B" game. We keep its indie, pixelated feel but make the controls **much less clunky** and add a lot more depth and options.
-- **Air Offense Command** (Android): the plane is shown from the side and flies to the right across a scrolling landscape. We like its look and side-scrolling layout. Its ground-attack gameplay is a **later** feature, not part of the early builds.
-
-Read these before doing any work:
-- `docs/GAME_DESIGN.md`: the full vision (what the game becomes eventually)
-- `docs/ROADMAP.md`: the phased plan, broken into small chunks
-- `docs/PROTOTYPE_SPEC.md`: detailed spec for the **current** milestone (the prototype)
-- `docs/DEPLOYMENT.md`: how builds are exported and shared
+Read before working: `docs/GAME_DESIGN.md` (long-term vision, NOT a to-do list),
+`docs/ROADMAP.md` (phased chunks), `docs/PROTOTYPE_SPEC.md` (current milestone),
+`docs/DEPLOYMENT.md`.
 
 ## Current focus: prototype only
+Career, money, unlocks, mission planner, weapons, weather, mobile, back end are
+out of scope until the owner says otherwise.
 
-Right now we are **only** building the basic prototype: a couple of planes that can take off, fly and land between two bases, playable in a browser. Career, money, unlocks, mission planner, weapons, weather, mobile, back end and per-aircraft cockpits are all **out of scope** until the owner says otherwise. `GAME_DESIGN.md` describes the long-term vision so early code doesn't paint us into a corner. It is **not** a to-do list.
+## How we work
+- One roadmap chunk (or owner request) at a time. Nothing from later phases
+  "while you're at it": leave a TODO in the roadmap.
+- End of each chunk: summarise, say how to test (keys, what should happen), stop.
+- Keep the game runnable in Godot at every step.
+- Feel over realism: arcade flight model, believable but fun and readable.
+- Data-driven: aircraft and bases are `.tres` resources, not hard-coded.
+- Every tunable number is exposed (`@export` or resource field).
+- Git: small commits per step; **always ask before pushing**. Remote `origin` =
+  github.com/rohailnajmi007/Shaheen, branch `main`.
+- **Deploy (Vercel) only when the owner asks**: it publishes publicly.
+- Update `docs/ROADMAP.md` when a chunk or request is done, and the matching
+  `docs/notes/*.md` file when a decision there changes.
 
-## How we work (important)
+## Tech
+- Godot 4.7.2, GDScript only, Compatibility renderer, web first (Vercel,
+  https://shaheen-green.vercel.app), Windows second. No back end.
+- Executables: `godot` (editor, `godot -e`) and `godot_console` (CLI) under
+  `C:\Users\rohai\AppData\Local\Microsoft\WinGet\Links\`.
+- Headless check: `godot_console --headless --path . --import`, then
+  `--headless --path . --quit-after 120`. Test scripts (`extends SceneTree`) go in
+  the scratchpad, run with `-s`; screenshots need a window (not headless).
+  Details: `docs/notes/TECH.md`.
 
-- **Small chunks.** We build one roadmap chunk at a time. Do only the current chunk. Don't build features from later phases "while you're at it". Leave a short TODO note in the roadmap instead.
-- At the end of each chunk: summarise what changed, say how to test it (which keys to press, what should happen), and stop so the owner can play it.
-- Keep the game **runnable at every step**. A chunk isn't done if the project doesn't open and run in Godot.
-- **Feel matters more than realism.** The flight model is arcade-style. If a choice is between "realistic" and "fun and readable", choose fun and readable.
-- **Data-driven.** Aircraft stats and base definitions live in data resources (`.tres`), not hard-coded in scripts, so new aircraft and bases are added without code changes.
-- **Every tunable number is exposed** (`@export` vars or resource fields) so the owner can tweak feel in the editor.
-- Use git; one commit (or a few) per chunk with clear messages.
-- Update `docs/ROADMAP.md` checkboxes when a chunk is finished.
+## Rules that bite often
+- **Never `queue_redraw()` static scenery every frame** (web lag). See TECH.md.
+- The editor strips `.tres` values equal to script defaults when re-saving: keep
+  aircraft `.tres` explicit; restore from git if stripped.
+- Units: physics SI, drawing 4 px/m (`scripts/world_scale.gd`); altitude A m is
+  drawn at y = -A*4. Aircraft origin = main wheel contact point.
+- Layout: scene scripts next to their `.tscn`; shared scripts in `scripts/`;
+  Resource classes in `scripts/data/`; data in `data/`. `docs/` is `.gdignore`d.
+- Controls (source of truth: Input Map): Up/Down throttle (hold), Left nose up,
+  Right nose down, E engine, F flaps, G gear, B brake, T fuel truck, Esc pause,
+  R restart, F1 debug.
+- Instructor lines: aggressive, short shouted English, occasional censored curse
+  (d*mn, h*ll, sh*tting, f*ck), nothing corny, under ~110 characters.
+- Ranks: Mushshak AVN CDT, F-16A/D SQN LDR, Mirage V FLT LT.
 
-## Tech stack
+## Visual style
+640x360 base viewport, stretch `canvas_items`, integer scaling, nearest filter
+(aircraft sprites use linear + mipmaps). Side view, plane flies left to right,
+camera follows with look-ahead, parallax layers. Stylised bases, never real
+layouts or satellite imagery. Placeholders at final size. Silkscreen pixel font
+(sizes 8 or 16).
 
-- **Engine:** Godot 4 (latest stable 4.x release).
-- **Language:** GDScript only. Godot 4 can't export C# projects to the web, and the web build is how we share the game.
-- **Renderer:** Compatibility (OpenGL / WebGL 2). Required for reliable web export and older phones.
-- **Platforms:** Web (HTML5) first. Windows desktop as a secondary export. Android later.
-- **Back end:** none for now. Saves are local (Godot `user://`, which maps to browser storage on web). Cloud saves and leaderboards come much later (likely Supabase or Firebase).
-- **Hosting:** Vercel, as a static site serving the Godot web export (see `docs/DEPLOYMENT.md`). No other hosts for now.
+## Content and sensitivity
+Real PAF base and aircraft names; scenery stylised and invented, no sensitive
+detail. Use a stylised placeholder roundel; the real PAF emblem may need ISPR/PAF
+permission (owner decides later).
 
-## Visual style rules
-
-- Pixel art, low internal resolution: **640×360** base viewport (leaves room for the cockpit panel at the top), scaled up with integer scaling (2× = 1280×720, 3× = 1920×1080) and nearest-neighbour filtering (no blur).
-  - Project Settings → Display → Window: viewport 640×360, stretch mode `viewport`, aspect `keep`, scale mode `integer`.
-  - Rendering → Textures → Default texture filter: `Nearest`.
-- Side view. The plane flies **left to right**. The camera follows the plane horizontally and vertically, with a little look-ahead in the direction of travel.
-- Parallax background layers (sky gradient, distant mountains, mid hills, near trees and buildings) give a sense of speed and place.
-- Each base has its own look (e.g. green Peshawar valley, Salt Range hills near Mianwali and Sargodha, coastal Karachi), but it's **stylised**: runway, hangars, control tower, landmarks. Never trace real base layouts or use satellite imagery.
-- Until real art exists, use **simple placeholder shapes** (Polygon2D / ColorRect / tiny generated PNGs) at the correct final pixel size, so real sprites can be dropped in later without code changes.
-- Pixel font for the HUD and menus.
-
-## Screen layout (reference: `docs/reference/tu95_layout_reference.png`)
-
-The reference screenshot is from TU-95. We want a **similar layout, not a copy**: our own art, aircraft and PAF setting.
-
-- **Owner change (after chunk 1.8): the instrument panel and the instructor box are swapped.** The plane flies on the left of the screen and was hidden behind the tall panel when climbing, so now: instructor box top-left (small), radar top-centre, instrument panel top-right. The descriptions below are the original reference layout.
-- **Top-left: cockpit instrument panel.** A grey metal panel with chunky pixel-art **analog round gauges** (airspeed, altimeter, vertical speed, engine/throttle). Above or beside them: throttle lever, flap and gear indicators, warning lights. It overlays the sky.
-- **Top-centre: flight phase panel.** A small dark box showing the current phase (`TAKE OFF`, `CLIMB`, `CRUISE`, `DESCENT`, `APPROACH`, `LANDED`) with a tiny diagram of the plane's attitude or the phase.
-- **Top-right: radio/instructor message box.** A pixel portrait (placeholder: a PAF instructor or ATC officer) plus short pixel-font messages, e.g. "Throttle up to begin your takeoff roll", "Gear up!", "Cleared to land, Peshawar". A row of small lights underneath is optional decoration.
-- **Bottom ~60%: the world.** A wide, fairly **zoomed-out** side view: the plane is **small** relative to big base buildings (hangars, a long terminal/admin block, control tower), with green hills, clouds and a pale sky behind. Ground and runway along the bottom.
-- The panels are part of the UI layer (`CanvasLayer`) and stay fixed. The world scrolls underneath.
-- Prototype: **one shared panel design** for both aircraft, with gauge ranges taken from the aircraft data. Different cockpit panels per aircraft come later.
-
-## Suggested project structure
-
-```
-res://
-  project.godot
-  scenes/
-    main.tscn              # entry point
-    flight/flight.tscn     # one flight: world + aircraft + HUD
-    aircraft/aircraft.tscn
-    world/runway.tscn, base.tscn, parallax_bg.tscn
-    ui/hud.tscn, result_screen.tscn, main_menu.tscn
-  scripts/                 # or keep scripts next to their scenes
-  data/
-    aircraft/*.tres        # AircraftData resources
-    bases/*.tres           # BaseData resources
-  assets/
-    sprites/ fonts/ audio/
-docs/
-```
-
-## Content and sensitivity notes
-
-- Bases and aircraft use real PAF names. Scenery is stylised and invented. No real layouts, no sensitive detail.
-- Official PAF insignia and emblems: use a stylised placeholder roundel for now. Using the real emblem in a public or paid release may need permission (ISPR/PAF). The owner will decide later.
-
-## Working notes (keep this section up to date)
-
-Decisions and facts future sessions need. Update it whenever something here changes.
-
-- **Godot 4.7.2** installed via winget. Executables: `C:\Users\rohai\AppData\Local\Microsoft\WinGet\Links\godot.exe` (editor) and `godot_console.exe` (headless/CLI). Both are on the user PATH as `godot` / `godot_console` (VS Code must be restarted to see it).
-  - Open the editor: `godot -e` from the project root. Run the game: F5.
-  - Headless checks: `godot_console --headless --path . --import` then `godot_console --headless --path . --quit-after 120`. Throwaway test scripts (`extends SceneTree`) go in the scratchpad, run with `-s <script>`.
-- **Performance (owner reported heavy lag in the browser, 2026-11-17):** the cause was redrawing static scenery every frame (desktop flight ran at only ~28 fps uncapped; web GDScript is several times slower). Rules now: **never `queue_redraw()` static scenery every frame.** Parallax bands redraw only when their tile window, colour or height changes, and send each band as ONE `RenderingServer.canvas_item_add_triangle_array` (shapes pre-triangulated in `_tris`) instead of one draw call per cloud puff/tree. Bases draw once; the windsock and tower beacon live on a small child layer (`_anim`) that redraws per frame. Landmarks draw once (night: 6-7 redraws/s for beacons). Runway night lights 15/s, stars 10/s. Measured uncapped on the dev PC: takeoff 28 → ~310-350 fps, night 20 → ~200 fps, draw calls ~885 → ~120. Re-measure with a vsync-off windowed test script if adding scenery.
-- **Start screen backdrop:** `scenes/ui/menu_backdrop.gd` (golden-hour PAF airfield: sky, sun, mountains, hills, trees, tower, waving Pakistan flag, two shelters with a parked JF-17 and F-16, a K-8, runway; drifting clouds in two open sky lanes so they never pass behind the UI; a Mirage + two F-16 formation crossing the top every 9 s). Static parts on one layer drawn once; only clouds/flag/formation redraw. Subtitle and route line removed from the start screen (owner).
-- **Web deploy:** live at **https://shaheen-green.vercel.app** (Vercel project `shaheen`, owner's account). `export_presets.cfg` "Web" preset (threads off, `build/web/index.html`); `deploy.bat` exports headless, deletes `build/web/.env.local` (token written by `vercel link`, must never be uploaded) and runs `vercel deploy build/web --prod --yes`. Web templates installed (`web_nothreads_*.zip` extracted from the official 4.7.2 archive because the editor download stalled). Vercel CLI 65 logged in. Deploying publishes publicly: only when the owner asks.
-- **Git:** this folder is its own repo (branch `main`). Small commits per step. **Always ask the owner before pushing.** Remote `origin` = https://github.com/rohailnajmi007/Shaheen.git (added 2026-11-17).
-- **Controls** (owner's layout, source of truth is the Input Map in `project.godot`): ↑/↓ throttle (hold), ← pitch nose up, → pitch nose down, E engine, F flaps, G gear, B brake (ground and air), T fuel truck (refuelling stop), Esc pause, R restart.
-- **Aircraft order:** Super Mushshak first, then F-16. Both will eventually wear PAF colour schemes with the Pakistan flag; placeholders until the art phase. Mushshak livery reference: `docs/reference/super_mushshak_livery_reference.png`.
-- **Feel:** the owner wants motion that follows a believable flight path (too slow → stall, more speed → more lift → climb, drag and friction always act). Arcade-simple controls, believable physics.
-- **Flight model (chunk 1.3, `scenes/aircraft/aircraft.gd`):** custom forces, no RigidBody. Lift = weight × (speed / stall_speed)² × cl(aoa); cl rises linearly to 1.0 at `stall_aoa_deg`, then collapses to `post_stall_lift`. So each aircraft's stall speed is a direct data value, and more speed at the same pitch means a climb. Drag = k·v²·(1 + induced·cl²). Propeller thrust fades with speed (`thrust_zero_speed_kt`; 0 for jets). A stall lasts at least `min_stall_time_s` and forces the nose down. On the ground: normal force, rolling friction, brakes; nose can't rise below `rotate_speed_kt`. Mushshak tested: lift-off ~64 kt after ~180 m, climb ~1,400 fpm at ~95 kt, cruise ~115-130 kt, stall ~52 kt.
-- **Flaps:** flights start in **TO** (`default_flap_setting`). F steps one notch and reverses at the ends (TO → UP → TO → LDG → TO → UP), matching the real sequence: takeoff, clean up, approach, landing. The flap is drawn as a red panel at the wing trailing edge (it overlaps the top of the "385" in the art).
-- **Pull-up energy loss (owner wants sharp pulls punished):** `pitch_rate_drag` 0.35 adds drag per deg/s of pitch rate (airborne only) and `induced_drag` 2.0. Measured from 110 kt: sharp yank to 22° loses ~38 kt (old model: 16), gentle 10 s pull ~12 kt.
-- **Instructor reacts** to gear/flap changes immediately (`hud.gd::_react_to_controls`), with different advice in the climb vs on approach.
-- **Data files:** the Godot editor drops .tres values equal to the script defaults when it re-saves a resource. Keep `super_mushshak.tres` explicit (restore from git if it gets stripped) so the Mushshak's numbers don't silently change when a script default changes.
-- **Systems (chunk 1.4):** flights start with the engine **off** (E to start, ~1.5 s spool; `Aircraft.start_with_engine_on` for testing). Fuel is compressed (Mushshak: ~6 min at full throttle); empty tank = engine stops. Flaps are per-setting arrays in `AircraftData` (`flap_lift_bonus`, `flap_drag`). `retractable_gear = false` for the Mushshak (fixed gear). B = wheel brakes on the ground, air brake in the air. Aircraft mass is constant for now (fuel weight comes with the mission planner).
-- **Speed feel:** `AircraftData.speed_response` = **1.4**. History: 1.0 felt too slow, 2.0 felt too fast (owner, 2026-11-17). It amplifies only the along-path net force, so speed changes are quicker without changing top speed, climb rate or stall speed. Brakes 0.9 g.
-- **Mushshak numbers:** measured with speed_response 2.0: 0→60 kt ~3.3 s incl. spool, idle decel ~8 kt/s. At 1.4 expect roughly 0→60 kt ~4.5 s, idle decel ~5.5 kt/s. Stall: 59 kt flaps UP, 53 kt TO, 47 kt LDG.
-- **HUD layout (current):** MessageBox top-left (4..216), Radar top-centre (222..366), InstrumentPanel top-right (370..636), `CadetBadge` under the instructor box at (4, 70) (moved from bottom-left because it hid the plane; `cadet_badge.gd`: compact horizontal plate, PAF pilot wings | gold rank over the white name, thin gold border; badge sprite `assets/sprites/paf_pilot_wings.png` built by `python tools/make_badge.py` from the owner's `docs/reference/paf_pilot_wings_source.png`).
-- **HUD (chunk 1.5, `scenes/ui/`):** `hud.tscn` (CanvasLayer) holds `InstrumentPanel` (gauges, throttle, fuel, lights, warnings), `Radar` (`radar.gd`, top-centre: side-view route map with bases + plane blip, phase, km to go, progress segments; phase logic in `scripts/flight_phase.gd`; replaced the old PhaseBox attitude diagram and RouteBar at the owner's request), `MessageBox` (instructor portrait + typewriter text with a queue; `say(text, urgent)`), and a hidden `DebugLabel` toggled with **F1**. All of it is drawn in code as placeholder pixel art at final size. Instructor tutorial messages live in `hud.gd::_instructor()`. `flight.gd` calls `hud.setup(aircraft)`.
-- **Font:** Silkscreen (SIL Open Font License, `assets/fonts/Silkscreen-OFL.txt`), set as the project-wide UI font, imported with antialiasing/hinting/subpixel off for crisp pixels. Use sizes 8 or 16.
-- **Aircraft (chunk 1.8):** chosen on the start screen (`GameState.AIRCRAFT` list, `GameState.aircraft_path`); `flight.gd` calls `aircraft.set_data()`. `data/aircraft/super_mushshak.tres` and `f16.tres`. F-16: no propeller (`has_propeller` false), **F-16D art replaced 2026-11-18** (`docs/reference/f16_sprite_source.png`, No. 11 Sqn "Falcons" 10805, drawn gear-down; old art kept as `f16d_old_sprite_source.png`): gear is an art layer `f16_gear.png` sliding up 33 px (like the Mirage), main wheel x 169, tailplane layer as before; flight numbers unchanged. (The F-16A still draws its gear in code: `sprite_gear_x/top_y/wheel_size`.) afterburner (`afterburner_thrust_n`, detent at `afterburner_threshold` 0.85, red mark on the throttle, A/B warning light, flame at `sprite_nozzle`). Measured: lift-off ~425 m dry / ~280 m A/B, level top speed 449 kt dry / 579 kt A/B, stall ~125 kt. Handling: pitch 30 deg/s, accel 300 deg/s², stall AoA 18°. A softer version (20/60/22° + a fly-by-wire G limit) was tried and **rejected by the owner as "unnecessarily smooth"**; keep the crisp numbers. Nose gear sits under the intake, not the nose.
-- **Takeoff rotation:** holding nose-up on the roll starts lifting the nose from `rotate_start_fraction` (0.7) x rotate speed, growing to `max_ground_pitch_deg` at rotate speed (owner: pressing pitch up on the roll must do something). F-16: nose starts at ~106 kt, lift-off ~138 kt if held from the start.
-- **Moving control surfaces:** F-16 all-moving tailplane is a separate layer (`f16_elevator.png`, cut from the body by the sprite tool's `elevator` config; the hole in the body is filled dark grey) drawn rotated about `sprite_elevator_hinge` by `elevator_max_deg` (20) x `Aircraft.elevator` (follows the stick at `elevator_speed`). Trailing edge up for nose-up. Mushshak: none (owner: skip for now).
-- **Pilot G effects (F-16 only, `g_effects`):** `Aircraft.g_load` = felt G along the seat axis (smoothed). Above `g_effect_min_speed_kt` (250): blackout builds from 5 G (full at 9 G), redout from -1.5 G (full at -4 G), onset 0.8/s, recovery 1.2/s. Drawn by `scenes/ui/g_effect.gd` (full-screen shader ColorRect added by `hud.gd`, sized to the viewport in code: anchors don't apply to a code-created Control under a CanvasLayer). The glass panel's G readout uses `g_load`. Measured at 450 kt: hard pull ~10 G, full blackout in ~1.2 s; hard push ~-7 G, redout. Flame size: `afterburner_flame_length` 260 / `afterburner_flame_width` 30 (texture px).
-- **Cockpit per aircraft:** `AircraftData.cockpit_style` 0 = Analog (grey plate, round dials), 1 = Glass (F-16: dark panel, two green MFD tapes for speed/Mach/G and altitude/VS, three gear lights). Both live in `instrument_panel.gd` (`_draw_glass` section).
-- **Stalls:** no automatic nose drop (owner): the aircraft keeps its attitude and falls; push the nose down to recover. The stick always works, even while stalled.
-- **No attitude limits (owner):** no pitch clamp in the air (loops, vertical climbs, inverted flight are possible; pitch wraps at +/-180 deg). Lift handles any angle: linear up to +/- `stall_aoa_deg` (negative stalls too), collapses past it, and fades to zero as the angle of attack nears 90 deg. Touchdown with the nose above `tail_strike_pitch_deg` = tail-strike crash; beyond 90 deg = upside-down crash. Measured: F-16 full-A/B loop from 450 kt works (stalls over the top if pulled at full rate).
-- **Crash breakup:** `Aircraft.crash(severity)` shatters the body texture into **many small irregular shards** (owner rejected 2-3 big pieces as "Lego blocks"): a jittered lattice over the painted area, each cell kept as a chunk or split into two triangles, empty cells skipped, drawn as textured polygons with a random scorch tint. ~50 shards for a Mushshak small crash, ~150 for a big F-16 crash. Shards never bounce: they land and slide to a stop. `Aircraft.BIG_CRASH_SEVERITY` (0.6) splits the two kinds: **small** = shards scatter a little and scrape forward, `crash_effect.gd` shows dust, low sparks and a thin grey smoke wisp (no fireball); **big** = shards blasted outward plus flash, multi-blob fireball, sparks, ground fire and a thick black smoke column. Severity = sink/(3*hard limit) + max(speed/stall - 1, 0)*0.5, from `flight.gd::_crash` (owner: planes exploded far too easily). Crashes at landing speed are small (measured 0.25-0.49 even at 1,100 fpm); big explosions need high speed or a very hard impact.
-- **Sprite tool:** `python tools/make_aircraft_sprites.py [name]` (configs for super_mushshak and f16 inside). New aircraft = add a config + source picture, run it, copy the printed numbers into a new .tres, add the path to `GameState.AIRCRAFT`. Turn on mipmaps in each new PNG's .import.
-- **Aircraft art (owner-approved approach):** the plane must look like the owner's art. Source picture: `docs/reference/super_mushshak_sprite_source.png` (plane on white). `python tools/make_aircraft_sprites.py` (needs Pillow) removes the white background and splits it into three aligned layers in `assets/sprites/`: `super_mushshak_body.png`, `_gear.png` (slides up behind the body to retract) and `_prop.png` (blurred blades, shown while the engine runs; a still blade is drawn when stopped). Textures are stored at 4x and drawn at `sprite_scale` 0.25 with mipmaps + linear filtering, so the plane looks smooth like the art, not blocky. On-screen length ~70 px ("original size" per owner; they rejected a 127 px version as too big, and rejected hand-made pixel sprites). The tool prints the numbers for the `sprite_*` fields in the .tres. Flaps are a small code-drawn red line at the wing trailing edge.
-- **Smooth motion:** the aircraft remembers its transform at the last two physics ticks and each rendered frame draws it in between (`_sync_node`, `_process`, `Engine.get_physics_interpolation_fraction()`), so it doesn't judder on screens faster than 60 Hz. The camera (`follow_camera.gd`) runs every frame after the aircraft (process_priority aircraft -10, camera -5, scenery 0), is locked horizontally to the plane and eases only the look-ahead and the height (Godot's own position smoothing is off).
-- **Rendering:** stretch mode is `canvas_items` (layout is 640x360, but sprites/text render at window resolution, 2x at 1280x720), integer scaling. Cleaner rotation and text than `viewport` mode. Base buildings: `building_scale` = 1.
-- **Instructor:** placeholder portrait in `message_box.gd`: **black flying helmet with the sun visor down** (owner; eyes hidden, so no blink), green flight suit, PAF flag patch; mouth moves while text types.
-- **Bases and route (chunk 1.6):** `BaseData` (`scripts/data/base_data.gd`, `data/bases/risalpur.tres`, `peshawar.tres`). **Risalpur is always the starting point** for now. `scenes/world/base.tscn` draws name board, windsock, tower, admin block, hangars and owns its `Runway` (with approach lights). `flight.gd` places departure at x=0 and destination at `route_distance_m` (9 km), and blends scenery colours/mountain height between the two bases' themes. Parallax: `scenes/world/parallax_band.gd` (custom, not Parallax2D) with kinds MOUNTAINS/HILLS/TREES/CLOUDS.
-- **Camera framing (`follow_camera.gd`):** below ~40 m the ground stays at screen y 320 so the runway is visible (plane's wheels may rise to screen y 155, keeping the sprite clear of the HUD); above ~130 m the plane sits at screen y 240. Look-ahead up to 200 px. Open question: zoom out with speed?
-- **Testing note:** screenshot test scripts must run windowed (`godot_console --path . -s ...`), headless can't read the viewport. After teleporting the plane in a test (setting `pos_m`), call `aircraft._sync_node(true)` and `camera.snap()`, or the shot shows the camera still catching up.
-- **Units:** physics in SI; drawing at 4 px/m (`scripts/world_scale.gd`). Aircraft node origin = **main wheel** contact point (`sprite_main_wheel_x`: F-16 202, Mushshak 172), so on the takeoff roll the aircraft pivots on its main wheels and only the nose wheel lifts; nose points +x. Altitude A m is drawn at y = -A × 4.
-- **Layout conventions:** scene scripts live next to their `.tscn`; shared/global scripts in `scripts/`; Resource classes (`AircraftData`, later `BaseData`) in `scripts/data/`; `.tres` data in `data/`. `docs/` has a `.gdignore` so Godot doesn't import it.
-- **Scene flow (as of chunk 1.7):** main scene = `scenes/ui/main_menu.tscn` (name entry, built in code in `main_menu.gd`) → `scenes/flight/flight.tscn` (Sky gradient CanvasLayer, Mountains/Hills/Clouds/Trees parallax, Ground, DepartureBase, DestinationBase, Aircraft, Camera, HUD with Radar + CadetBadge, ResultScreen). R reloads the flight scene; MENU goes back to the start screen. `scenes/main.tscn` was removed. **Start screen (owner, 2026-11-18): sequential steps**, one per screen: START -> ENTER YOUR NAME -> CHOOSE YOUR AIRCRAFT (shows "rank name") -> CHOOSE YOUR ROUTE (RISALPUR > MASROOR / RISALPUR > MUSHAF) -> TIME OF DAY (DAY/NIGHT) -> FLY, with BACK/NEXT (Enter/Esc). `main_menu.gd` `Step` enum, one page per step; the title stays at the top, the selected card/route label turns gold. Backdrop clouds use one lane above the title.
-- **Aircraft list (owner):** Start-screen order: Super Mushshak ("TRAINER"), **Mirage V** ("STRIKE FIGHTER", added after chunk 1.8 at the owner's request), **F-16A** ("MULTI-ROLE", added 2026-11-18), F-16D "MULTI-ROLE" rightmost. Four cards: the start-screen box is 612 px wide. **F-16A** (`data/aircraft/f16a.tres`): identical numbers to the F-16D (owner: change nothing), only the art differs (`docs/reference/f16a_sprite_source.png`, No. 9 Sqn "Griffins" 84717; sprite tool config `f16a`): tailplane cut to `f16a_elevator.png`, gear drawn in code at the same places as the D (main x 202, nose x 292 under the intake). If F-16D numbers change, change f16a.tres too. Mirage: `data/aircraft/mirage5.tres`, sprite from `docs/reference/mirage5_sprite_source.png` via the tool's `mirage5` config. Card text is just the role (owner: no "fast/hard" adjectives). Mirage: like the F-16 but less thrust (58 kN dry + 34 kN A/B, 10 t), stall 140 kt, rotate 160 kt, gear in code, no tailplane (delta), rank **FLT LT** (my choice, not the owner's; change if asked), `cockpit_style` 2 = dark analog (round dials on a black-green panel, amber lettering, amber MACH/G strip). Measured: lift-off ~154 kt / 309 m on A/B, level top speed 429 kt dry / 546 kt A/B.
-- **Takeoff/landing roll (owner):** once the nose wheel is off (pitch > 1 deg) and speed >= rotate speed, the nose keeps rising by itself at `auto_rotate_rate_deg_s` (4) to the takeoff attitude (tail-strike limit - 2), so it flies off (no endless wheelie; pushing the stick forward cancels it). Measured with a single tap at 0.85 Vr then hands off: Mushshak lifts at 64 kt, F-16 157 kt, Mirage 171 kt. After touchdown (`Aircraft.landing_roll`) the nose can be held up only above `nose_down_fraction` (0.75) x rotate speed; below it comes down at `derotate_rate_deg_s` (5) whatever the stick says. Hands off after touchdown: F-16 nose down at ~97 kt.
-- **Brakes:** fighters `brake_strength` 1.2 (owner: much more effective; was 0.45). F-16 stops ~390 m after touchdown with brakes (was ~730 m). Braking scales with weight on the wheels, so it bites harder once the nose is down.
-- **Night lights follow the engine (owner):** aircraft lights are off when the flight loads and come on with E (`night_lights and engine_on`).
-- **Parked aircraft / base scenery (owner):** front-view sprites from the owner's pictures (`k8_front`, `f16_front` configs in the sprite tool; the tool's `erase` rects blank the phone buttons in the screenshots). `BaseData` apron fields: `parked_aircraft` (textures, cycled), `apron_from_m`/`apron_to_m`, `parked_spacing_m`, `shelter_every` (every n-th slot is a hardened aircraft shelter), `squadron_boards` ("LINE1|LINE2") at `squadron_board_x_m`, `welcome_sign` lines at `welcome_sign_x_m`. Drawn by `base.gd` (shelters with earth berms and a door lamp at night, boards, welcome board) and `scenes/world/parked_aircraft.gd` (child node, smooth filtering). Risalpur: K-8s only (415-640 m). Masroor: **JF-17s only** (owner), from 296 m, boards "NO. 2 MULTI-ROLE SQUADRON / MINHASIANS" at 375 m and "NO. 8 MULTI-ROLE SQUADRON / HAIDER" at 440 m (on tall posts so a jet stopped in front doesn't hide them; both on screen where an F-16 stops, ~390 m), and "WELCOME TO MASROOR / THE HOME OF WARRIORS" at 1430 m, just past the far end of the runway (owner moved it there). `BaseData.parked_max` = 12 at both bases (owner: about 10-15, no more). Masroor hangar_count is 1 to make room for the apron.
-- **Mirage V art:** now from the owner's gear-down picture; the tool splits a gear layer (main wheel + nose leg) that slides up into the body like the Mushshak's.
-- **Night visibility:** aircraft `modulate` = `flight.gd::night_aircraft_boost` (2.4, 2.1, 1.5) on top of the night tint; afterburner flame colours go through `GameState.glow`.
-- **No takeoff pitch limit (owner, 1.9):** the old 500 ft takeoff limit was removed; any pitch at any time. Instead **tail strikes crash**: `AircraftData.tail_strike_pitch_deg` (15 for all three). On the ground the nose is capped by `max_ground_pitch_deg` only below rotate speed (and on the slow part of the landing roll); from rotate speed it's free. `aircraft.gd::_check_tail_strike` also checks just after lift-off / in the flare: tail arm = `sprite_main_wheel_x * sprite_scale / 4` m behind the main wheels, strike when wheel height < arm x (sin pitch - sin strike); emits `tail_struck` → `flight.gd::_on_tail_struck` crash. Touchdown above the strike pitch = tail-strike crash too. Instructor warns "NOSE TOO HIGH!" within `hud.tail_warning_margin_deg` (4) of the strike pitch near the ground, and the rotate call says ease, don't yank. Measured: a tap at 0.85 Vr flies off fine (max ~7 deg); holding full nose-up from the start, or yanking after Vr, strikes the tail at lift-off (all three aircraft).
-- **Destination:** **PAF Base Masroor (Karachi)** (`data/bases/masroor.tres`, replaced Peshawar as the destination; `peshawar.tres` kept for later). Sandy coastal theme; `BaseData.ground_color` blends the ground strip from the departure's colour to the destination's (`ground.gd`).
-- **Refuelling stop (owner, 2026-11-18):** landing at a base BEFORE the destination (e.g. Masroor on the way to Mushaf) is a stop, not a result: `flight.gd` state `STOPOVER` after the rollout. With the aircraft stopped and the engine off, **T** spawns `scenes/world/fuel_truck.gd` (drawn behind the aircraft): drives in from the right, parks ahead of the nose, hose to the main-wheel area, fills the tank in `fuel_time_s` (4 s), reels in (controls unlock: `hose_stowed`), drives off left behind the aircraft. Then take off again; touchdown stats reset on that lift-off so only the destination landing is graded. Result lists "Refuelled at ..."; fuel used counts the added fuel. Instructor refuses the truck if moving or engine on. Back at Risalpur or past the destination = still WRONG BASE.
-- **One shared world, several destinations (owner, 2026-11-18):** the flight scene builds Risalpur (x = 0) and **every** base in `GameState.DESTINATIONS` at its `BaseData.route_distance_m` (`flight.gd::_build_world`, `_bases` = [x, data, node]), so the player can divert and land anywhere; only landing at the destination picked on the start screen (`GameState.destination_path`) passes, any other base (incl. back at Risalpur) = WRONG BASE. Bases must not overlap. Masroor 5 km, Mushaf 7 km (owner: next stop further, but at most ~2 min from Risalpur; measured with a Mushshak autopilot at ~120 kt / 1,100 ft: 89 s and 121 s from lift-off to each threshold; Masroor's runway ends 600 m before Mushaf). Scenery theme (`_update_theme`) and ground colour (`ground.gd` colour stops via `set_stops`) blend across the gap between one base's runway end and the next threshold. Landmarks get every base (`landmarks.setup([[kinds, x], ...])`). Radar draws the other bases dimmed and a marker over the destination (`radar.other_bases`). Adding a base = a .tres with `route_distance_m` + its path in `GameState.DESTINATIONS` (in route order).
-- **PAF Base Mushaf (Sargodha)** (`data/bases/mushaf.tres`): at 7 km, green Punjab plains (mountains 0.12), **F-16s only** on the apron, boards "NO. 9 SQUADRON / GRIFFINS" (380 m) and "NO. 29 SQUADRON / AGGRESSORS" (445 m) (owner's wording), **red and gold** (owner: different from Masroor's blue; `BaseData.squadron_board_color` / `squadron_board_trim`), "WELCOME TO MUSHAF / THE HOME OF EAGLES" at **both** ends of the runway (-170 m and 1540 m; `welcome_sign_x_m` is now an array) in `welcome_sign_style` 1 = dark-blue stone monument with gold key-pattern border, round crest and a gold calligraphy line (from the owner's photo `docs/reference/mushaf_welcome_sign_reference.png`; the pixel font can't do Urdu). **Trophies** (`BaseData.trophies` / `trophy_x_m`, drawn in `base.gd::_draw_trophy`): IAF MiG-21 Bison tail section (320 m, from `docs/reference/mushaf_mig21_trophy_reference.png`) and Su-30MKI twin-fin tail section (520 m) on black plinths with gold names, 1.5x size (`trophy_scale`), floodlit at night; the apron leaves `apron_clear_m` around boards and trophies. **Banyan trees** (`BaseData.banyan_x_m`, `base.gd::_draw_banyan`: thick trunk, prop-roots, wide low crown) behind the buildings. Landmark kinds for the approach: `fields`, `orchard` (kinnow), `banyan`, `village` (houses, mosque, water tank, brick-kiln chimney).
-- **Landmarks (scenery only):** `scenes/world/landmarks.gd`, a parallax layer (factor 0.3) between Hills and Clouds, lifted 18 px above the ground line so the trees don't hide it. Kinds listed in `BaseData.landmarks`, placed by `LAYOUT` offsets (camera metres from the base's threshold). Karachi: Arabian Sea with ships, port cranes + containers, Teen Talwar, Bahria Icon Tower (lit windows + red beacon at night), Mazar-e-Quaid (floodlit at night), Masjid-e-Tooba, skyline blocks. Visible roughly 4-6 km along the route (the approach). Each kind is drawn scaled up by `SCALE` (owner: bigger and clearer; 1.3 for the tall tower so it stays under the HUD, ~1.5-1.8 others). Mazar-e-Quaid was redrawn after owner feedback: wide terraced platform, squat marble block with a lit front and shaded side, tall pointed arch with the dark copper grille in a recessed frame, cornice, drum, broad softly pointed dome with shading and a finial.
-- **Ranks (owner, keep):** Super Mushshak = **AVN CDT** (Aviation Cadet), F-16 = **SQN LDR** (Squadron Leader), Mirage V = FLT LT. Data: `AircraftData.pilot_rank` / `pilot_rank_call`. The start-screen rank label follows the selected aircraft.
-- **Instructor tone (owner):** aggressive, angry, hyper, short shouted lines, **English only** (owner removed the Urdu), with the occasional censored curse word (d*mn, h*ll, sh*tting, f*ck). Nothing corny. Lines live in `hud.gd` (`_instructor`, `_react_to_controls`, `_landing_checklist`, lift-off/touchdown) and `flight.gd` (bounce, wrong base, grades, crash). Keep each under ~110 characters so it fits the box.
-- **Night mode:** `GameState.night` (DAY/NIGHT buttons on the start screen). `flight.gd::_setup_night` adds a `CanvasModulate` (`GameState.NIGHT_TINT`) and `scenes/world/stars.gd` to the Sky layer, sky tint `night_sky_tint`, `aircraft.night_lights = true`. Lights are drawn in the darkened world with `GameState.glow(color)` (colour divided by the tint, so they still come out at full brightness). Aircraft light positions are data (`light_nav_near/far`, `light_tail`, `light_beacon`, `light_landing`, texture px); the landing light rides the nose gear and is on only with the gear down. Runway (`runway.gd`) and base (`base.gd`) have night drawing; crash fire glows too.
-- **GameState autoload** (`scripts/game_state.gd`): `pilot_name`, `night`, `pilot_title()` → "AVN CDT ALI" / "SQN LDR ALI", `pilot_call()` → "Avn Cdt Ali" / "Sqn Ldr Ali", `glow()`. In-memory only (no saving yet). Test scripts (`extends SceneTree`) can't use the `GameState` identifier directly; use `root.get_node("GameState")`.
-- **Landing bounce (owner, 1.9):** a touchdown harder than `AircraftData.bounce_from_fpm` but within `hard_touchdown_fpm` hops the aircraft back up (`aircraft.gd::_maybe_bounce`, launch height `bounce_height_min_m`..`max_m` scaled by how far into that band the sink rate is; lift makes it float a bit higher). Only **one hop per landing** (`_bounced`; reset on a normal lift-off): the next contact just settles, so it never becomes a bouncing ball. Smooth landings below the threshold don't hop; beyond the hard limit it's still a crash. Values: Mushshak bounces 500-1000 fpm, 0.3-1.2 m; F-16/Mirage 400-900 fpm, 0.2-0.6 m. Measured hands-off after a 700-890 fpm touchdown: one hop, second contact 300-470 fpm, stops on the runway (HARD). The bounce emits `lifted_off`, so the instructor shouts and the next touchdown is judged again (the grade uses the worst one).
-- **Forgiving landings (owner, 1.9: "crashing on every landing", "exploding way too easily"):** causes found by a scripted-approach test: 1° nose-low = crash, nose stayed up after touchdown so brakes didn't bite and jets rolled off the end, low gear limits, low explosion threshold. Now: `hard_touchdown_fpm` Mushshak 1000, jets 900; nose more than `max_nose_down_touchdown_deg` down = nose wheel first, **one grade lower** (instructor shouts), crash only beyond `nose_first_crash_deg` (5); after touchdown the nose comes down by itself at `derotate_rate_deg_s` unless ← is held (`aircraft.gd::_update_pitch`), so the wheels take the weight and the brakes work; `overrun_crash_speed_kt` jets 40, Mushshak 30. Measured: approaches at 0.9-1.15x approach speed and 250-400 fpm all stop on the runway (Mushshak ~530-750 m, jets ~730-1180 m past the threshold, 1400 m runway).
-- **Landing judge (chunk 1.7, in `flight.gd`):** states PREFLIGHT → FLYING → ROLLOUT → DONE. Touchdown checks (in order): on a runway? gear down? nose not below `max_nose_down_touchdown_deg`? sink rate ≤ `hard_touchdown_fpm`? Grade from the worst touchdown (bounces count). Off a runway on the ground faster than `overrun_crash_speed_kt` = crash. Rollout ends below 1 kt → result. `Aircraft.crash()` freezes the wreck; `scenes/world/crash_effect.gd` draws fire/smoke; `scenes/ui/result_screen.gd` shows the panel. Route is 5 km. `main` becomes the start screen in chunk 1.8.
+## Detailed notes (read the one for the area you're touching)
+- `docs/notes/FLIGHT_MODEL.md`: lift/drag/stall, flaps, takeoff and landing roll,
+  tail strikes, bounce, landing judge and grades, crashes, G effects, measured numbers
+- `docs/notes/AIRCRAFT.md`: aircraft list and order, per-aircraft data and art,
+  sprite tool, gear/tailplane layers, cockpit styles, lights
+- `docs/notes/WORLD.md`: shared world and bases, Masroor/Mushaf scenery,
+  refuelling stop, parked aircraft, landmarks, night mode, camera framing
+- `docs/notes/UI.md`: start screen steps, HUD layout and parts, radar,
+  instructor portrait, result screen, GameState
+- `docs/notes/TECH.md`: project structure, rendering, smooth motion,
+  performance rules and measurements, testing recipes, web deploy
