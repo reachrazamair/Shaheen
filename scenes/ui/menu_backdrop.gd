@@ -22,8 +22,9 @@ var _clouds: Array = []   # [position, scale, speed]
 var _tex_jf17: Texture2D = preload("res://assets/sprites/jf17_front_body.png")
 var _tex_f16_front: Texture2D = preload("res://assets/sprites/f16_front_body.png")
 var _tex_k8: Texture2D = preload("res://assets/sprites/k8_front_body.png")
-var _tex_f16: Texture2D = preload("res://assets/sprites/f16_body.png")
-var _tex_mirage: Texture2D = preload("res://assets/sprites/mirage5_body.png")
+# Whole aircraft (body + tailplane), as in the game.
+var _tex_f16: Texture2D = (load("res://data/aircraft/f16.tres") as AircraftData).picture()
+var _tex_mirage: Texture2D = (load("res://data/aircraft/mirage5.tres") as AircraftData).picture()
 
 
 func _ready() -> void:

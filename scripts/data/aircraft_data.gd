@@ -255,5 +255,31 @@ extends Resource
 @export var sprite_flap_hinge := Vector2(130, 40)
 @export var sprite_flap_length := 18.0
 @export var body_color := Color(0.95, 0.95, 0.95)
+
+var _picture: Texture2D
+
+
+## Still picture of the whole aircraft for menus: the body with its tailplane
+## layer on top (the body alone has the tailplane cut out), cropped to the
+## visible pixels. Built once and cached.
+func picture() -> Texture2D:
+	if _picture != null or sprite == null:
+		return _picture if _picture != null else sprite
+	var img := sprite.get_image()
+	if img.is_compressed():
+		img.decompress()
+	img.clear_mipmaps()
+	img.convert(Image.FORMAT_RGBA8)
+	if sprite_elevator:
+		var e := sprite_elevator.get_image()
+		if e.is_compressed():
+			e.decompress()
+		e.clear_mipmaps()
+		e.convert(Image.FORMAT_RGBA8)
+		img.blend_rect(e, Rect2i(Vector2i.ZERO, e.get_size()), Vector2i.ZERO)
+	img = img.get_region(img.get_used_rect())
+	img.generate_mipmaps()
+	_picture = ImageTexture.create_from_image(img)
+	return _picture
 @export var stripe_color := Color(0.82, 0.12, 0.12)
 @export var trim_color := Color(0.25, 0.4, 0.8)

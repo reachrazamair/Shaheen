@@ -205,7 +205,7 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_theme_constant_override("separation", 1)
 	var pic := TextureRect.new()
-	pic.texture = data.sprite
+	pic.texture = data.picture()
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pic.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -225,24 +225,18 @@ func _aircraft_card(index: int, group: ButtonGroup) -> Button:
 
 func _select_aircraft(path: String) -> void:
 	GameState.aircraft_path = path
-	_set_preview(GameState.aircraft_data().sprite)
+	_set_preview(GameState.aircraft_data())
 	_update_pilot_label()
 
 
-## Bottom-right picture of the chosen aircraft: cropped to the visible art and
-## scaled to the same width for every aircraft, standing on the same line (so
-## same-length aircraft like the two F-16s show at the same size, whatever
-## empty space their textures have).
-func _set_preview(tex: Texture2D) -> void:
-	var img := tex.get_image()
-	if img.is_compressed():
-		img.decompress()
-	var used := Rect2(img.get_used_rect())
-	var crop := AtlasTexture.new()
-	crop.atlas = tex
-	crop.region = used
-	_preview.texture = crop
-	var h := preview_width * used.size.y / maxf(used.size.x, 1.0)
+## Bottom-right picture of the chosen aircraft (body + tailplane, cropped to
+## the visible art), scaled to the same width for every aircraft and standing
+## on the same line, so same-length aircraft like the two F-16s match.
+func _set_preview(data: AircraftData) -> void:
+	var tex := data.picture()
+	_preview.texture = tex
+	var sz := tex.get_size()
+	var h := preview_width * sz.y / maxf(sz.x, 1.0)
 	_preview.size = Vector2(preview_width, h)
 	_preview.position = Vector2(preview_right - preview_width, preview_bottom - h)
 
