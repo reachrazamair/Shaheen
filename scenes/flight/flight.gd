@@ -14,6 +14,11 @@ extends Node2D
 ##   STOPOVER  - stopped at a base BEFORE the destination: T calls the fuel
 ##               truck (engine off), then take off again for the destination
 ##   DONE      - result screen showing (landed, wrong base or crashed)
+##
+## Air-to-ground mission (GameState.Mission.STRIKE): only the departure and
+## one landing base (random from DESTINATIONS) stand in the world; targets
+## lie between them (StrikeMission). The landing base stays hidden (not
+## drawn, not a runway, not on the radar) until the attack is over.
 
 signal flight_finished(result: Dictionary)
 
@@ -61,6 +66,8 @@ var _landed_on := -1            ## index into _bases during rollout
 ## Index 0 is the departure.
 var _bases: Array = []
 var _truck: Node2D
+## Air-to-ground mission, or null on a ferry flight.
+var strike: StrikeMission
 var _pause_menu: PauseMenu
 ## Fuel added by trucks at stopovers (kg) and where.
 var _refuelled_kg := 0.0
@@ -73,15 +80,22 @@ var _nose_wheel_first := false  ## a touchdown came down slightly nose-low: one 
 func _ready() -> void:
 	if GameState.aircraft_path != "":
 		aircraft.set_data(load(GameState.aircraft_path))
-	if GameState.destination_path != "":
-		destination = load(GameState.destination_path)
-	if destination.route_distance_m > 0.0:
-		route_distance_m = destination.route_distance_m
+	if GameState.mission == GameState.Mission.STRIKE:
+		strike = StrikeMission.new()
+		strike.plan()
+		destination = load(GameState.DESTINATIONS.pick_random())
+		route_distance_m = strike.recovery_x_m
+	else:
+		if GameState.destination_path != "":
+			destination = load(GameState.destination_path)
+		if destination.route_distance_m > 0.0:
+			route_distance_m = destination.route_distance_m
 	_build_world()
 	aircraft.place_at(spawn_x_m)
 	if GameState.night:
 		_setup_night()
 	camera.snap()
+	hud.strike = strike
 	hud.setup(aircraft, departure, destination, route_distance_m)
 	for b in _bases.slice(1):
 		if b[1] != destination:
@@ -98,6 +112,11 @@ func _ready() -> void:
 	add_child(_pause_menu)
 	_pause_menu.restart_pressed.connect(_retry)
 	_pause_menu.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
+	if strike:
+		add_child(strike)
+		strike.setup(self, aircraft, aircraft, hud)
+		strike.revealed.connect(_on_strike_revealed)
+		_set_base_hidden(_bases.size() - 1, true)
 	result_screen.retry_pressed.connect(_retry)
 	result_screen.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_theme()
@@ -135,9 +154,17 @@ func _physics_process(delta: float) -> void:
 func _build_world() -> void:
 	departure_base.data = departure
 	_bases = [[0.0, departure, departure_base]]
+	# [BaseData, threshold x m] for every other base in this world.
+	var others: Array = []
+	if strike:
+		others.append([destination, route_distance_m])
+	else:
+		for path in GameState.DESTINATIONS:
+			var b: BaseData = load(path)
+			others.append([b, b.route_distance_m if b.route_distance_m > 0.0 else route_distance_m])
 	var reused := false
-	for path in GameState.DESTINATIONS:
-		var b: BaseData = load(path)
+	for o in others:
+		var b: BaseData = o[0]
 		var node: Node2D = destination_base
 		if reused:
 			node = BaseScene.instantiate()
@@ -145,7 +172,7 @@ func _build_world() -> void:
 			move_child(node, destination_base.get_index() + 1)
 		reused = true
 		node.data = b
-		var x := b.route_distance_m if b.route_distance_m > 0.0 else route_distance_m
+		var x: float = o[1]
 		node.position.x = x * WorldScale.PX_PER_M
 		_bases.append([x, b, node])
 	_bases.sort_custom(func(p: Array, q: Array) -> bool: return p[0] < q[0])
@@ -165,16 +192,33 @@ func _build_world() -> void:
 		grass.append(_bases[i + 1][1].ground_color)
 		tufts.append(_bases[i + 1][1].ground_tuft_color)
 	ground.set_stops(xs, grass, tufts)
+	_setup_landmarks()
+
+
+## Background landmarks of every visible base.
+func _setup_landmarks() -> void:
 	var marks: Array = []
 	for b in _bases:
-		marks.append([b[1].landmarks, b[0]])
+		if b[2].visible:
+			marks.append([b[1].landmarks, b[0]])
 	landmarks.setup(marks)
+
+
+## Strike mission: the landing base is hidden until the attack is over.
+func _set_base_hidden(i: int, hidden: bool) -> void:
+	_bases[i][2].visible = not hidden
+	_setup_landmarks()
+
+
+func _on_strike_revealed() -> void:
+	_set_base_hidden(_bases.size() - 1, false)
+	hud.radar.show_destination = true
 
 
 ## Index (into _bases) of the runway under a given x (m), or -1.
 func runway_at(x_m: float) -> int:
 	for i in _bases.size():
-		if x_m >= _bases[i][0] and x_m <= _bases[i][0] + _bases[i][1].runway_length_m:
+		if _bases[i][2].visible and x_m >= _bases[i][0] and x_m <= _bases[i][0] + _bases[i][1].runway_length_m:
 			return i
 	return -1
 
@@ -381,6 +425,10 @@ func _base_result() -> Dictionary:
 
 
 func _end(result: Dictionary) -> void:
+	if strike:
+		var reasons: Array = result.get("reasons", [])
+		reasons.append("Targets destroyed: %d of %d." % [strike.targets_destroyed, strike.targets.size()])
+		result["reasons"] = reasons
 	state = State.DONE
 	_pause_menu.enabled = false
 	aircraft.controls_enabled = false

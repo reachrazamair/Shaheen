@@ -33,6 +33,11 @@ var aircraft_path: String = AIRCRAFT[0]
 var destination_path: String = DESTINATIONS[0]
 ## Time of day chosen on the start screen.
 var night := false
+## Mission type chosen on the start screen: FERRY = fly to the chosen base;
+## STRIKE = air to ground (bomb the targets, then land at the base that
+## appears ahead, picked at random from DESTINATIONS).
+enum Mission { FERRY, STRIKE }
+var mission := Mission.FERRY
 ## Slider volume per bus, 0..1 (0 = muted).
 var volumes := {"Master": 1.0, "Engine": 1.0, "Effects": 1.0}
 

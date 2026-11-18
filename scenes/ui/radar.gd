@@ -16,6 +16,11 @@ var remaining_m := 0.0
 ## Other bases along the route (diversions): [[threshold x m, runway length m], ...].
 ## Drawn dimmer; the map always runs from the departure to the farthest base.
 var other_bases: Array = []
+## Strike mission: the landing base is off the map until it appears.
+var show_destination := true
+## Strike mission (targets as blips, bombs left), or null.
+var strike: StrikeMission
+@export var target_color := Color(1.0, 0.42, 0.28)
 
 @export_group("Colours")
 @export var bezel_color := Color(0.42, 0.33, 0.24)
@@ -87,11 +92,27 @@ func _draw() -> void:
 	_draw_base(to_x.call(0.0), to_x.call(departure_runway_m), ground_y)
 	for b in other_bases:
 		_draw_base(to_x.call(b[0]), to_x.call(b[0] + b[1]), ground_y, 0.45)
-	_draw_base(to_x.call(route_m), to_x.call(route_m + destination_runway_m), ground_y)
-	# Marker over the destination.
-	var dx: float = to_x.call(route_m + destination_runway_m * 0.5)
-	draw_colored_polygon(PackedVector2Array([Vector2(dx - 2, sr.position.y + 2), Vector2(dx + 3, sr.position.y + 2),
-			Vector2(dx + 0.5, sr.position.y + 5)]), segment_on)
+	if show_destination:
+		_draw_base(to_x.call(route_m), to_x.call(route_m + destination_runway_m), ground_y)
+		# Marker over the destination.
+		var dx: float = to_x.call(route_m + destination_runway_m * 0.5)
+		draw_colored_polygon(PackedVector2Array([Vector2(dx - 2, sr.position.y + 2), Vector2(dx + 3, sr.position.y + 2),
+				Vector2(dx + 0.5, sr.position.y + 5)]), segment_on)
+	if strike:
+		# Targets: a bright block while standing, a dim x once destroyed.
+		for t in strike.targets:
+			var tx: float = to_x.call(t.x_m)
+			if t.destroyed:
+				draw_rect(Rect2(tx - 1, ground_y - 3, 1, 1), ink_color.darkened(0.4))
+				draw_rect(Rect2(tx + 1, ground_y - 3, 1, 1), ink_color.darkened(0.4))
+				draw_rect(Rect2(tx, ground_y - 2, 1, 1), ink_color.darkened(0.4))
+			else:
+				draw_rect(Rect2(tx - 1, ground_y - 3, 3, 3), target_color)
+		# Bombs left: small bomb icons in the top-right corner.
+		for i in aircraft.bombs_left:
+			var bx := sr.end.x - 10 - i * 9
+			draw_rect(Rect2(bx, sr.position.y + 3, 6, 2), ink_color)
+			draw_rect(Rect2(bx - 1, sr.position.y + 2, 1, 4), ink_color)
 
 	# Altitude range (steps up as the plane climbs).
 	var alt := maxf(aircraft.altitude_ft, 0.0)
@@ -146,10 +167,11 @@ func _draw_strip() -> void:
 	draw_rect(r, bezel_dark)
 	draw_rect(r.grow(-1), strip_color)
 	_text(Vector2(r.position.x + 3, r.position.y + 9), phase, ink_color)
-	var dist := "%.1f KM" % (maxf(remaining_m, 0.0) / 1000.0)
+	var to_target := strike != null and not show_destination
+	var dist := ("TGT %.1f KM" if to_target else "%.1f KM") % (maxf(remaining_m, 0.0) / 1000.0)
 	var w := _font.get_string_size(dist, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
 	_text(Vector2(r.end.x - 3 - w, r.position.y + 9), dist, ink_color.darkened(0.15))
-	var progress := clampf(1.0 - remaining_m / route_m, 0.0, 1.0)
+	var progress := clampf(aircraft.pos_m.x / route_m if to_target else 1.0 - remaining_m / route_m, 0.0, 1.0)
 	var sw := (r.size.x - 6 - (segments - 1)) / segments
 	for i in segments:
 		var lit := progress * segments > i

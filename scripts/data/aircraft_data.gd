@@ -189,6 +189,24 @@ extends Resource
 ## Afterburner rumble at full afterburner (dB). Ignored without an afterburner.
 @export var afterburner_volume_db := -3.0
 
+@export_group("Weapons (air to ground)")
+## Can fly the air-to-ground mission (owner: jets only).
+@export var strike_capable := false
+## Free-fall bombs carried on a strike mission (Space drops one).
+@export var bomb_count := 2
+## Where each bomb hangs, texture px: x = middle of the bomb, y = its top
+## (pylon). Dropped from the last entry first.
+@export var bomb_hardpoints := PackedVector2Array()
+## Bomb size on the sprite, texture px (drawn at sprite_scale like the art).
+@export var bomb_length_px := 64.0
+@export var bomb_diameter_px := 12.0
+## Air drag on a falling bomb: deceleration = bomb_drag * speed^2 (1/m).
+@export var bomb_drag := 0.0002
+## Released bombs are pushed down off the pylon at this speed (m/s).
+@export var bomb_eject_ms := 2.0
+## A target this close (metres, edge to impact) is destroyed. Arcade-generous.
+@export var bomb_blast_radius_m := 18.0
+
 @export_group("Pilot")
 ## Rank shown with the player's name (badge, result screen) and in radio calls.
 @export var pilot_rank := "AVN CDT"

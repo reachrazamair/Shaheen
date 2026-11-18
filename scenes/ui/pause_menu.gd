@@ -19,6 +19,7 @@ const KEYS := [
 	["G", "GEAR UP/DOWN"],
 	["B", "BRAKES / AIR BRAKE"],
 	["T", "FUEL TRUCK"],
+	["SPACE", "DROP BOMB"],
 	["R", "RESTART"],
 	["ESC", "PAUSE"],
 ]

@@ -25,6 +25,8 @@ signal lifted_off
 signal tail_struck
 ## The aircraft was wrecked (severity 0..1, see crash()).
 signal wrecked(severity: float)
+## A bomb left its pylon (Space), at this position (m) and velocity (m/s).
+signal bomb_released(pos_m: Vector2, vel_m: Vector2)
 
 const FLAP_NAMES := ["UP", "TO", "LDG"]
 ## Crash severity (0..1) from which a crash is "big": explosion, shards blasted out.
@@ -67,6 +69,8 @@ var gear_pos := 1.0                ## actual: 1 down and locked, 0 up
 ## False once the flight is over (crash or result screen): input is ignored.
 var controls_enabled := true
 var crashed := false
+## Bombs still on the pylons (strike mission: the flight sets data.bomb_count).
+var bombs_left := 0
 ## Pitch at the last touchdown, before the ground levels the nose.
 var touchdown_pitch := 0.0
 
@@ -184,10 +188,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		if flap_setting + flap_direction < 0 or flap_setting + flap_direction >= FLAP_NAMES.size():
 			flap_direction = -flap_direction
 		flap_setting += flap_direction
+	elif event.is_action_pressed("drop_bomb"):
+		drop_bomb()
 	elif event.is_action_pressed("gear_toggle"):
 		# Fixed gear can't move; retractable gear can't come up on the ground.
 		if data.retractable_gear and not (on_ground and gear_down):
 			gear_down = not gear_down
+
+
+## Releases the next bomb (in the air only). Returns false if none was dropped.
+func drop_bomb() -> bool:
+	if bombs_left <= 0 or on_ground or crashed or not controls_enabled:
+		return false
+	bombs_left -= 1
+	var hp := data.bomb_hardpoints[mini(bombs_left, data.bomb_hardpoints.size() - 1)]
+	var pos := hardpoint_m(hp + Vector2(0.0, data.bomb_diameter_px * 0.5))
+	var down := Vector2(sin(pitch), -cos(pitch)) * data.bomb_eject_ms
+	bomb_released.emit(pos, velocity_m + down)
+	queue_redraw()
+	return true
+
+
+## World position (m) of a point on the sprite (texture px), at the latest physics tick.
+func hardpoint_m(tex_px: Vector2) -> Vector2:
+	var local := (tex_px - Vector2(_pivot_x(), data.sprite_wheel_bottom_y)) * data.sprite_scale
+	var world_px := _cur_px + local.rotated(_cur_rot)
+	return Vector2(world_px.x, -world_px.y) / WorldScale.PX_PER_M
 
 
 func _physics_process(delta: float) -> void:
@@ -694,6 +720,12 @@ func _draw_sprite_aircraft() -> void:
 	if ab > 0.0:
 		_draw_afterburner(ab)
 	draw_texture(data.sprite, Vector2.ZERO)
+
+	# Bombs on their pylons (strike mission), in front of the body.
+	for i in mini(bombs_left, data.bomb_hardpoints.size()):
+		var hp := data.bomb_hardpoints[i]
+		draw_rect(Rect2(hp.x - 7, hp.y - 4, 14, 5), Color(0.2, 0.21, 0.22))
+		Bomb.draw_shape(self, hp + Vector2(0, data.bomb_diameter_px * 0.5), data.bomb_length_px, data.bomb_diameter_px)
 
 	# Moving tailplane: rotates about its hinge, trailing edge up for nose-up.
 	if data.sprite_elevator:

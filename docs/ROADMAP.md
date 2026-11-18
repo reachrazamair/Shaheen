@@ -56,6 +56,9 @@ One chunk at a time, in this order (owner chose sound first).
 - [ ] 2.5 Gamepad support.
 - [ ] 2.6 Friends' feedback: gather it from the live build, tune controls and flight feel, settle the open questions above.
 
+- [x] 2.7 Air-to-ground mission (owner request 2026-11-18, pulled forward from Phase 6): MISSION step on the start screen, jets only, 2 free-fall bombs (Space), 2-3 random ground targets, bomb sight + impact marker, landing base (random Masroor/Mushaf) appears after the attack, targets destroyed on the result screen. Details: `docs/notes/COMBAT.md`.
+  - TODO later (Phase 6): anti-air threats, more weapons (rockets), mission planner loadouts, scoring/pay.
+
 **Everything below Phase 2 is on hold.** Don't start any of it until the owner says so. It's listed only so the code stays easy to extend.
 
 ## Phase 3: Career mode
@@ -78,6 +81,7 @@ One chunk at a time, in this order (owner chose sound first).
 - Rank and reputation, more mission types (formation, ferry flights).
 
 ## Phase 6: Ground attack (Air Offense Command inspired)
+(Basic air-to-ground mission already added as 2.7; the rest below is still to do.)
 - Weapons via the mission planner (bombs, rockets).
 - Ground targets, anti-air threats, mission objectives.
 - Separate mission type alongside normal flights.

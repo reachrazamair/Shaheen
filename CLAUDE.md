@@ -46,7 +46,8 @@ out of scope until the owner says otherwise.
 - Layout: scene scripts next to their `.tscn`; shared scripts in `scripts/`;
   Resource classes in `scripts/data/`; data in `data/`. `docs/` is `.gdignore`d.
 - Controls (source of truth: Input Map): Up/Down throttle (hold), Left nose up,
-  Right nose down, E engine, F flaps, G gear, B brake, T fuel truck, Esc pause,
+  Right nose down, E engine, F flaps, G gear, B brake, T fuel truck, Space drop
+  bomb (air-to-ground mission), Esc pause,
   R restart, F1 debug.
 - Instructor lines: aggressive, short shouted English, occasional censored curse
   (d*mn, h*ll, sh*tting, f*ck), nothing corny, under ~110 characters.
@@ -73,5 +74,6 @@ permission (owner decides later).
   refuelling stop, parked aircraft, landmarks, night mode, camera framing
 - `docs/notes/UI.md`: start screen steps, HUD layout and parts, radar,
   instructor portrait, result screen, GameState
+- `docs/notes/COMBAT.md`: air-to-ground mission, bombs, targets, bomb sight
 - `docs/notes/TECH.md`: project structure, rendering, smooth motion,
   performance rules and measurements, testing recipes, web deploy

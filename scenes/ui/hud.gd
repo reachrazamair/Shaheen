@@ -18,8 +18,12 @@ extends CanvasLayer
 ## of the tail-strike pitch while the tail is still near the runway.
 @export var tail_warning_margin_deg := 4.0
 @export var tail_warning_cooldown_s := 3.0
+## Strike mission bomb sight, screen px (bottom centre).
+@export var bomb_sight_rect := Rect2(200, 300, 240, 52)
 
 var aircraft: Aircraft
+## Air-to-ground mission (set before setup), or null on a ferry flight.
+var strike: StrikeMission
 var departure: BaseData
 var destination: BaseData
 var route_distance_m := 1.0
@@ -50,12 +54,24 @@ func setup(a: Aircraft, from_base: BaseData, to_base: BaseData, distance_m: floa
 	add_child(g_fx)
 	g_fx.aircraft = a
 	radar.aircraft = a
+	if strike:
+		radar.show_destination = false
+		radar.strike = strike
+		var sight := BombSight.new()
+		sight.strike = strike
+		sight.position = bomb_sight_rect.position
+		sight.size = bomb_sight_rect.size
+		add_child(sight)
 	_prev_gear_down = a.gear_down
 	_prev_flap = a.flap_setting
 	a.lifted_off.connect(_on_lifted_off)
 	a.touched_down.connect(_on_touched_down)
-	messages.say("%s! Target: %s. Why are you just SITTING there? E, start the d*mn engine!" % [
-			GameState.pilot_call(), to_base.short_name.capitalize()])
+	if strike:
+		messages.say("%s! %d targets out there, %d bombs. SPACE drops one. E, start up and GO!" % [
+				GameState.pilot_call(), strike.target_x_m.size(), a.data.bomb_count])
+	else:
+		messages.say("%s! Target: %s. Why are you just SITTING there? E, start the d*mn engine!" % [
+				GameState.pilot_call(), to_base.short_name.capitalize()])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -66,12 +82,23 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if aircraft == null:
 		return
-	var remaining := distance_to_destination()
-	radar.remaining_m = remaining
-	radar.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
+	if not destination_known():
+		# Strike mission before the landing base appears: distance to the next target.
+		var to_target := strike.distance_to_next_target()
+		radar.remaining_m = to_target if to_target < INF else 0.0
+		radar.phase = FlightPhase.compute(aircraft, has_flown)
+	else:
+		var remaining := distance_to_destination()
+		radar.remaining_m = remaining
+		radar.phase = FlightPhase.compute(aircraft, has_flown, absf(remaining))
 	_instructor(delta)
 	if debug_label.visible:
 		_update_debug()
+
+
+## False on a strike mission until the landing base has appeared.
+func destination_known() -> bool:
+	return strike == null or strike.is_revealed
 
 
 ## Metres to the destination runway threshold (negative once past it).
@@ -121,6 +148,8 @@ func _instructor(delta: float) -> void:
 		var gear_still_down := a.data.retractable_gear and a.gear_down
 		if a.flap_setting != 0 and a.altitude_ft > 500.0 and not gear_still_down and not _approaching():
 			_once("flaps_up", "500 feet and the flaps are still out?! F, flaps UP! Wake up!")
+		if not destination_known():
+			return
 		if a.altitude_ft > 1000.0:
 			_once("cruise", "Finally. %s is %.1f km. Under %d kt you stall, so WATCH your speed!" % [
 					destination.short_name.capitalize(), distance_to_destination() / 1000.0, roundi(a.data.stall_speed_kt)])
@@ -149,6 +178,8 @@ func _tail_warning(delta: float) -> void:
 
 
 func _approaching() -> bool:
+	if not destination_known():
+		return false
 	var dist := distance_to_destination()
 	return dist < 2500.0 and dist > -destination.runway_length_m
 
@@ -172,7 +203,7 @@ func _react_to_controls() -> void:
 	var flaps_changed := a.flap_setting != _prev_flap
 	_prev_gear_down = a.gear_down
 	_prev_flap = a.flap_setting
-	var dest := destination.short_name.capitalize()
+	var dest := destination.short_name.capitalize() if destination_known() else "the targets"
 
 	if gear_changed and a.data.retractable_gear and not a.on_ground:
 		if not a.gear_down:

@@ -1,6 +1,8 @@
 extends Control
-## Start screen, in sequential steps (owner): START -> name -> aircraft ->
-## route (destination) -> time of day -> FLY. One step on screen at a time,
+## Start screen, in sequential steps (owner): START -> name -> mission ->
+## aircraft -> route (destination; ferry flights only) -> time of day -> FLY.
+## Air to ground: only strike-capable aircraft (jets) can be picked, and there
+## is no route step (targets and the landing base are random). One step on screen at a time,
 ## with BACK / NEXT (Enter = next, Esc = back). Choices live in GameState,
 ## so they are remembered when the player comes back from a flight.
 ## The rank comes from the aircraft ("AVN CDT" in the Super Mushshak, "SQN LDR"
@@ -17,8 +19,8 @@ const AIRCRAFT_BLURB := [
 	"MULTI-ROLE",
 ]
 
-enum Step { START, NAME, AIRCRAFT, ROUTE, TIME }
-const STEP_TITLES := ["", "ENTER YOUR NAME", "CHOOSE YOUR AIRCRAFT", "CHOOSE YOUR ROUTE", "TIME OF DAY"]
+enum Step { START, NAME, MISSION, AIRCRAFT, ROUTE, TIME }
+const STEP_TITLES := ["", "ENTER YOUR NAME", "CHOOSE YOUR MISSION", "CHOOSE YOUR AIRCRAFT", "CHOOSE YOUR ROUTE", "TIME OF DAY"]
 
 ## Text colour of a selected toggle button.
 const SELECTED_COLOR := Color(1.0, 0.82, 0.35)
@@ -39,6 +41,8 @@ var _next: Button
 var _name_edit: LineEdit
 var _preview: TextureRect
 var _pilot_label: Label
+## Aircraft card buttons, same order as GameState.AIRCRAFT.
+var _cards: Array[Button] = []
 
 
 func _ready() -> void:
@@ -82,7 +86,7 @@ func _build() -> void:
 	_step_label = _label("", 16, INK)
 	box.add_child(_step_label)
 
-	_pages = [_page_start(), _page_name(), _page_aircraft(), _page_route(), _page_time()]
+	_pages = [_page_start(), _page_name(), _page_mission(), _page_aircraft(), _page_route(), _page_time()]
 	for p in _pages:
 		box.add_child(p)
 
@@ -97,7 +101,7 @@ func _build() -> void:
 	_nav.add_child(_next)
 	box.add_child(_nav)
 
-	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   T FUEL TRUCK   R RESTART", 8, Color.WHITE)
+	var keys := _label("UP/DOWN THROTTLE   LEFT/RIGHT PITCH   E ENGINE   F FLAPS   G GEAR   B BRAKE   T FUEL TRUCK   SPACE BOMB   R RESTART", 8, Color.WHITE)
 	add_child(keys)
 	keys.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	keys.offset_top = -24
@@ -130,6 +134,56 @@ func _page_name() -> Control:
 	return c
 
 
+func _page_mission() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	var group := ButtonGroup.new()
+	var options := [
+		[GameState.Mission.FERRY, "FERRY FLIGHT", "FLY FROM BASE TO BASE AND LAND"],
+		[GameState.Mission.STRIKE, "AIR TO GROUND", "BOMB THE TARGETS, THEN LAND AT THE BASE AHEAD"],
+	]
+	for o in options:
+		var b := _toggle("", Vector2(280, 56), group, GameState.mission == o[0])
+		var inner := VBoxContainer.new()
+		inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+		inner.alignment = BoxContainer.ALIGNMENT_CENTER
+		inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var l1 := _label(o[1], 16, Color.WHITE)
+		var l2 := _label(o[2], 8, Color(0.8, 0.85, 0.8))
+		l1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		l2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(l1)
+		inner.add_child(l2)
+		b.add_child(inner)
+		_highlight(b, l1)
+		var mission: GameState.Mission = o[0]
+		b.toggled.connect(func(on: bool) -> void:
+			if on:
+				GameState.mission = mission)
+		row.add_child(b)
+	return row
+
+
+## Air to ground: aircraft that can't carry bombs are greyed out, and if one of
+## them is selected the first one that can is picked instead.
+func _update_cards() -> void:
+	var strike := GameState.mission == GameState.Mission.STRIKE
+	var first_ok := -1
+	var selected_ok := false
+	for i in _cards.size():
+		var data: AircraftData = load(GameState.AIRCRAFT[i])
+		var ok := not strike or data.strike_capable
+		_cards[i].disabled = not ok
+		_cards[i].modulate = Color.WHITE if ok else Color(1, 1, 1, 0.35)
+		if ok and first_ok < 0:
+			first_ok = i
+		if ok and GameState.AIRCRAFT[i] == GameState.aircraft_path:
+			selected_ok = true
+	if not selected_ok and first_ok >= 0:
+		_cards[first_ok].button_pressed = true
+
+
 func _page_aircraft() -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
@@ -138,7 +192,9 @@ func _page_aircraft() -> Control:
 	cards.add_theme_constant_override("separation", 10)
 	var group := ButtonGroup.new()
 	for i in GameState.AIRCRAFT.size():
-		cards.add_child(_aircraft_card(i, group))
+		var card := _aircraft_card(i, group)
+		_cards.append(card)
+		cards.add_child(card)
 	v.add_child(cards)
 	_pilot_label = _label("", 16, INK)
 	v.add_child(_pilot_label)
@@ -256,6 +312,8 @@ func _show(step: Step) -> void:
 	_step_label.visible = step != Step.START
 	_nav.visible = step != Step.START
 	_next.text = "FLY" if step == Step.TIME else "NEXT"
+	if step == Step.AIRCRAFT:
+		_update_cards()
 	_update_pilot_label()
 	_update_nav()
 	if step == Step.NAME:
@@ -280,14 +338,20 @@ func _go_next() -> void:
 	if _step == Step.TIME:
 		get_tree().change_scene_to_file(FLIGHT_SCENE)
 		return
-	_show((_step + 1) as Step)
+	var next := (_step + 1) as Step
+	if next == Step.ROUTE and GameState.mission == GameState.Mission.STRIKE:
+		next = Step.TIME   # no route on a strike: targets and landing base are random
+	_show(next)
 
 
 func _go_back() -> void:
 	if _step == Step.NAME:
 		GameState.pilot_name = _name_edit.text.strip_edges()
 	if _step > Step.START:
-		_show((_step - 1) as Step)
+		var prev := (_step - 1) as Step
+		if prev == Step.ROUTE and GameState.mission == GameState.Mission.STRIKE:
+			prev = Step.AIRCRAFT
+		_show(prev)
 
 
 # --- Widgets ---
